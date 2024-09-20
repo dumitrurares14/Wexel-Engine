@@ -19,6 +19,43 @@ export function configureCanvas(canvas, context, device, canvasFormat) {
     }
 }
 
+
+export function CreateRenderPipeline(device,shaderCode)
+{
+    const shaderModule = device.createShaderModule({
+        label: 'vertexMain',
+        code: shaderCode
+    });
+    const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+    const pipeline = device.createRenderPipeline({
+        layout: "auto",
+        label: "Render pipeline",
+        vertex: {
+            module: shaderModule,
+            entryPoint: "vertexMain",
+            buffers: [vertexBufferLayout]
+        },
+        fragment: {
+            module: shaderModule,
+            entryPoint: "fragmentMain",
+            targets: [{ format: presentationFormat }],
+            format: presentationFormat
+        },
+        primitive:
+        {
+            topology: "triangle-list",
+            cullMode: "back"
+        },
+        depthStencil: {
+            depthWriteEnabled: true,
+            depthCompare: 'less',
+            format: 'depth24plus',
+          },
+    });
+
+    return pipeline;
+}
+//volume and render data
 export const cubeVertexSize = 4 * 10; // Byte size of one cube vertex.
 export const cubePositionOffset = 0;
 export const cubeColorOffset = 4 * 4; // Byte offset of cube vertex color attribute.
@@ -69,3 +106,21 @@ export const cubeVertexArray = new Float32Array([
     1, -1, -1, 1,  1, 0, 0, 1,  0, 1,
     -1, 1, -1, 1,  0, 1, 0, 1,  1, 0,
   ]);
+
+export const vertexBufferLayout = {
+    arrayStride: cubeVertexSize,
+    attributes: [
+      {
+        // position
+        shaderLocation: 0,
+        offset: cubePositionOffset,
+        format: 'float32x4',
+      },
+      {
+        // uv
+        shaderLocation: 1,
+        offset: cubeUVOffset,
+        format: 'float32x2',
+      },
+    ],
+  };
