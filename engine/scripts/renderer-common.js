@@ -20,15 +20,21 @@ export function configureCanvas(canvas, context, device, canvasFormat) {
 }
 
 
-export function CreateRenderPipeline(device,shaderCode)
+export function CreateRenderPipeline(device,bindGroupLayout,shaderCode)
 {
     const shaderModule = device.createShaderModule({
         label: 'vertexMain',
         code: shaderCode
     });
     const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+
+    const pipelineLayout = device.createPipelineLayout({
+      bindGroupLayouts: [
+        bindGroupLayout, // @group(0)
+      ]
+    });
     const pipeline = device.createRenderPipeline({
-        layout: "auto",
+        layout: pipelineLayout,
         label: "Render pipeline",
         vertex: {
             module: shaderModule,
@@ -55,6 +61,8 @@ export function CreateRenderPipeline(device,shaderCode)
 
     return pipeline;
 }
+
+
 //volume and render data
 export const cubeVertexSize = 4 * 10; // Byte size of one cube vertex.
 export const cubePositionOffset = 0;

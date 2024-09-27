@@ -4,6 +4,7 @@ struct Uniforms {
 }
 @binding(0) @group(0) var<uniform> uniforms : Uniforms;
 
+
 struct VertexOutput {
   @builtin(position) Position : vec4f,
   @location(0) fragUV : vec2f,
@@ -22,11 +23,22 @@ fn vertexMain(
   return output;
 }
 
+//3d texture
+@binding(1) @group(0) var texture : texture_3d<f32>;
+@binding(2) @group(0) var sampler0 : sampler;
+
 @fragment
 fn fragmentMain(
   @location(0) fragUV: vec2f,
   @location(1) fragPosition: vec4f
 ) -> @location(0) vec4f 
 {
+
+
+
+
+
+
+  
   return fragPosition;
 }
