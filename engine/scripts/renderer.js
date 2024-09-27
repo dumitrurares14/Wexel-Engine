@@ -83,7 +83,45 @@ var volumeTexture = device.createTexture({
         GPUTextureUsage.TEXTURE_BINDING |
         GPUTextureUsage.COPY_DST
 });
+// Define texture dimensions and format
+const width = 128;
+const height = 128;
+const depth = 128;
+const bytesPerPixel = 4; // rgba8unorm
+const dataSize = width * height * depth * bytesPerPixel;
 
+// Create a Uint8Array to hold the texture data
+const textureData = new Uint8Array(dataSize);
+
+// Fill the data with a gradient
+for (let z = 0; z < depth; z++) {
+    for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+            const index = (z * width * height + y * width + x) * bytesPerPixel;
+            
+
+            if(z%2==0)
+            {
+            textureData[index] =  0;       // Red channel
+            textureData[index + 1] =  0;  // Green channel
+            textureData[index + 2] =  0;   // Blue channel
+            textureData[index + 3] = 255;                 // Alpha channel
+            }
+            else{
+            textureData[index] =  0;       // Red channel
+            textureData[index + 1] =  0;  // Green channel
+            textureData[index + 2] =  0;   // Blue channel
+            textureData[index + 3] = 0;                 // Alpha channel
+            }
+        }
+    }
+}
+
+// Define the texture write layout
+const textureWriteLayout = {
+    bytesPerRow: width * bytesPerPixel, // Number of bytes per row
+    rowsPerImage: height                 // Number of rows per image (depth slice)
+};
 var volumeSampler = device.createSampler();
 const textureView = volumeTexture.createView({
     dimension: "3d",
@@ -106,21 +144,60 @@ const bindGroup = device.createBindGroup({
 
 
 const aspect = canvas.width / canvas.height;
-const projectionMatrix = mat4.perspective((2 * Math.PI) / 5, aspect, 1, 100.0);
+var projectionMatrix = mat4.perspective((2 * Math.PI) / 5, aspect, 1, 100.0);
+projectionMatrix[5] *= -1;
 const modelViewProjectionMatrix = mat4.create();
 const viewMatrix = mat4.identity();
-mat4.translate(viewMatrix, vec3.fromValues(0, 0, -6), viewMatrix);
+const modelMatrix = mat4.identity();
+var inverseViewMatrix = mat4.identity();
 
+let cameraPosition = vec3.fromValues(0, 0, 20);
 
 
 var startTime = 0.0;
 var endTime = 0.0;
 startTime = performance.now();
-function draw() {
+mat4.translate(viewMatrix, cameraPosition, viewMatrix);
 
 
+function draw() { 
+
+    inverseViewMatrix = mat4.inverse(viewMatrix);
+    const mouseSpeed = 0.01;
+    if(engine.keysPressed['ArrowRight'])
+        mat4.rotateY(viewMatrix, -mouseSpeed, viewMatrix);
+    if(engine.keysPressed['ArrowLeft'])
+        mat4.rotateY(viewMatrix, mouseSpeed, viewMatrix);
+    if(engine.keysPressed['ArrowUp'])
+        mat4.rotateX(viewMatrix, mouseSpeed, viewMatrix);
+    if(engine.keysPressed['ArrowDown'])
+        mat4.rotateX(viewMatrix, -mouseSpeed, viewMatrix);
+
+    if(engine.keysPressed['w'])
+        mat4.translate(viewMatrix, vec3.fromValues(0,0,-engine.playerSpeed), viewMatrix);
+    if(engine.keysPressed['s'])
+        mat4.translate(viewMatrix, vec3.fromValues(0,0,engine.playerSpeed), viewMatrix);
+    if(engine.keysPressed['a'])
+        mat4.translate(viewMatrix, vec3.fromValues(-engine.playerSpeed,0,0), viewMatrix);
+    if(engine.keysPressed['d'])
+        mat4.translate(viewMatrix, vec3.fromValues(engine.playerSpeed,0,0), viewMatrix);
+    if(engine.keysPressed[' '])
+        mat4.translate(viewMatrix, vec3.fromValues(0,engine.playerSpeed,0), viewMatrix);
+
+   
+
+//mat4.rotateX(viewMatrix, engine.mouseDelta[1] *mouseSpeed, viewMatrix);
+//mat4.rotateY(viewMatrix, engine.mouseDelta[0] *mouseSpeed, viewMatrix);
+
+
+   engine.UpdateMouseStart();
+    
     configureCanvas(canvas, context, device, canvasFormat);
-    const transformationMatrix = mat4.multiply(projectionMatrix, viewMatrix, modelViewProjectionMatrix)
+    
+    const transformationMatrix = mat4.multiply(projectionMatrix, inverseViewMatrix, modelMatrix);
+    //const transformationMatrix = mat4.multiply(projectionMatrix, mat4.inverse(viewMatrix), modelViewProjectionMatrix)
+
+
     device.queue.writeBuffer(
         uniformBuffer,
         0,
@@ -129,7 +206,13 @@ function draw() {
         transformationMatrix.byteLength,
     );
 
-
+        // Upload the data to the texture
+    device.queue.writeTexture(
+        { texture: volumeTexture }, // Destination texture
+        textureData,                // Data to write
+        textureWriteLayout,         // Data layout
+        [width, height, depth]      // Size of the texture
+    );
 
 
     const encoder = device.createCommandEncoder();
@@ -153,7 +236,7 @@ function draw() {
     pass.setBindGroup(0, bindGroup);
     pass.draw(cubeVertexCount);
     pass.end();
-
+    
     const commandBuffer = encoder.finish();
     device.queue.submit([commandBuffer]);
 
@@ -166,7 +249,7 @@ function draw() {
 
     requestAnimationFrame(draw);
     startTime = endTime;
-
+    engine.ResetMouseDelta();
 }
 
 draw();
