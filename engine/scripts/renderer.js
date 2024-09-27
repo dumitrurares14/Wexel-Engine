@@ -145,44 +145,67 @@ const bindGroup = device.createBindGroup({
 
 const aspect = canvas.width / canvas.height;
 var projectionMatrix = mat4.perspective((2 * Math.PI) / 5, aspect, 1, 100.0);
-projectionMatrix[5] *= -1;
+//projectionMatrix[5] *= -1;
 const modelViewProjectionMatrix = mat4.create();
-const viewMatrix = mat4.identity();
+var viewMatrix = mat4.identity();
 const modelMatrix = mat4.identity();
 var inverseViewMatrix = mat4.identity();
 
-let cameraPosition = vec3.fromValues(0, 0, 20);
-
+var cameraPosition = vec3.fromValues(0, 0, 10);
+let aim = vec3.fromValues(0, 0, 0);
+let up = vec3.fromValues(0,1, 0);
 
 var startTime = 0.0;
 var endTime = 0.0;
 startTime = performance.now();
-mat4.translate(viewMatrix, cameraPosition, viewMatrix);
 
+
+var x = 0;
+var y = 0;
+var z = 10;
+
+const mouseSpeed = 1.1;
+let pitch,yaw;
 
 function draw() { 
 
-    inverseViewMatrix = mat4.inverse(viewMatrix);
-    const mouseSpeed = 0.01;
-    if(engine.keysPressed['ArrowRight'])
-        mat4.rotateY(viewMatrix, -mouseSpeed, viewMatrix);
-    if(engine.keysPressed['ArrowLeft'])
-        mat4.rotateY(viewMatrix, mouseSpeed, viewMatrix);
-    if(engine.keysPressed['ArrowUp'])
-        mat4.rotateX(viewMatrix, mouseSpeed, viewMatrix);
-    if(engine.keysPressed['ArrowDown'])
-        mat4.rotateX(viewMatrix, -mouseSpeed, viewMatrix);
+   // inverseViewMatrix = mat4.inverse(viewMatrix);
+    
+   
+//  if(engine.keysPressed['ArrowUp'])
+//         mat4.rotateX(viewMatrix, mouseSpeed, viewMatrix);
+//     if(engine.keysPressed['ArrowDown'])
+//         mat4.rotateX(viewMatrix, -mouseSpeed, viewMatrix);
+//      if(engine.keysPressed['ArrowRight'])
+//         mat4.rotateY(viewMatrix, -mouseSpeed, viewMatrix);
+//     if(engine.keysPressed['ArrowLeft'])
+//         mat4.rotateY(viewMatrix, mouseSpeed, viewMatrix);
 
     if(engine.keysPressed['w'])
-        mat4.translate(viewMatrix, vec3.fromValues(0,0,-engine.playerSpeed), viewMatrix);
+        z+=engine.playerSpeed;
+    
     if(engine.keysPressed['s'])
-        mat4.translate(viewMatrix, vec3.fromValues(0,0,engine.playerSpeed), viewMatrix);
+        z-=engine.playerSpeed;
+     
     if(engine.keysPressed['a'])
-        mat4.translate(viewMatrix, vec3.fromValues(-engine.playerSpeed,0,0), viewMatrix);
+        x-=engine.playerSpeed;
+     
     if(engine.keysPressed['d'])
-        mat4.translate(viewMatrix, vec3.fromValues(engine.playerSpeed,0,0), viewMatrix);
+        x+=engine.playerSpeed;
     if(engine.keysPressed[' '])
-        mat4.translate(viewMatrix, vec3.fromValues(0,engine.playerSpeed,0), viewMatrix);
+        y+=engine.playerSpeed;
+
+ yaw+=engine.mouseDelta[0]*mouseSpeed;
+pitch+=engine.mouseDelta[1]*mouseSpeed;
+
+
+//  aim[0] = Math.cos(pitch) * Math.sin(yaw);
+//  aim[1] =  Math.sin(pitch);
+//  aim[2] =  Math.cos(pitch) *  Math.cos(yaw);
+ 
+// vec3.normalize(aim, aim);
+
+viewMatrix = mat4.lookAt( vec3.fromValues(x, y, z) ,aim,up);
 
    
 
@@ -190,11 +213,12 @@ function draw() {
 //mat4.rotateY(viewMatrix, engine.mouseDelta[0] *mouseSpeed, viewMatrix);
 
 
+
    engine.UpdateMouseStart();
     
     configureCanvas(canvas, context, device, canvasFormat);
     
-    const transformationMatrix = mat4.multiply(projectionMatrix, inverseViewMatrix, modelMatrix);
+    const transformationMatrix = mat4.multiply(projectionMatrix, viewMatrix, modelMatrix);
     //const transformationMatrix = mat4.multiply(projectionMatrix, mat4.inverse(viewMatrix), modelViewProjectionMatrix)
 
 
