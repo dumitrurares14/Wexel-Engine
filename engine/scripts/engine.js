@@ -36,6 +36,8 @@ function initializeCanvas() {
         handleKeyUp(e);
     });
 
+    
+
     document.addEventListener('pointerlockchange', onPointerLockChange);
 
 }
@@ -70,8 +72,7 @@ function OnMouseMove(event)
 {
     mouseDelta[0] += -event.movementX;
     mouseDelta[1] += -event.movementY;
-    console.log(event.timeStamp);
-    
+
 }
 
 function ResetMouseDelta()
@@ -81,7 +82,7 @@ function ResetMouseDelta()
 
 // Function to handle keydown events
 function handleKeyDown(event) {
-    console.log(`Key pressed: ${event.key}`);
+    //console.log(`Key pressed: ${event.key}`);
     if(event.key == "h")
     {
         canvas.requestPointerLock();

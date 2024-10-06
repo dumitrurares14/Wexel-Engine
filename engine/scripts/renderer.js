@@ -25,9 +25,21 @@ const device = await adapter.requestDevice();
 const context = canvas.getContext("webgpu");
 const canvasFormat = navigator.gpu.getPreferredCanvasFormat();
 configureCanvas(canvas, context, device, canvasFormat);
-window.addEventListener('resize', configureCanvas(canvas, context, device, canvasFormat));
 
 
+window.addEventListener('resize', () => {
+    configureCanvas(canvas, context, device, canvasFormat);
+
+    // Recreate depth texture with new dimensions
+    depthTexture = device.createTexture({
+        size: [canvas.width, canvas.height],
+        format: 'depth24plus',
+        usage: GPUTextureUsage.RENDER_ATTACHMENT,
+    });
+
+    aspect = canvas.width / canvas.height;
+    projectionMatrix = mat4.perspective((2 * Math.PI) / 5, aspect, 1, 100.0);
+});
 
 
 const vertexBuffer = device.createBuffer({
@@ -46,7 +58,7 @@ const shaderCode = await engine.combineShaderFiles('./shaders/shader.wgsl', './s
 const bindGroupLayout = device.createBindGroupLayout({
     entries: [{
         binding: 0, // camera uniforms
-        visibility: GPUShaderStage.VERTEX,
+        visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
         buffer: {},
     },
     {
@@ -69,7 +81,7 @@ const renderPipeline = CreateRenderPipeline(device, bindGroupLayout, shaderCode)
 
 
 
-const depthTexture = device.createTexture({
+let depthTexture = device.createTexture({
     size: [canvas.width, canvas.height],
     format: 'depth24plus',
     usage: GPUTextureUsage.RENDER_ATTACHMENT,
@@ -101,7 +113,7 @@ for (let z = 0; z < depth; z++) {
 
 
             if (z % 2 == 0) {
-                textureData[index] = 0;       // Red channel
+                textureData[index] = 244;       // Red channel
                 textureData[index + 1] = 0;  // Green channel
                 textureData[index + 2] = 0;   // Blue channel
                 textureData[index + 3] = 255;                 // Alpha channel
@@ -127,7 +139,7 @@ const textureView = volumeTexture.createView({
 });
 
 const uniformBuffer = device.createBuffer({
-    size: 4 * 16, // size for 4 vec4 uniforms
+    size: 16 * 16, 
     usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
 });
 
@@ -142,8 +154,8 @@ const bindGroup = device.createBindGroup({
 });
 
 
-const aspect = canvas.width / canvas.height;
-var projectionMatrix = mat4.perspective((2 * Math.PI) / 5, aspect, 1, 100.0);
+let aspect = canvas.width / canvas.height;
+let projectionMatrix = mat4.perspective((2 * Math.PI) / 5, aspect, 1, 100.0);
 var viewMatrix = mat4.identity();
 const modelMatrix = mat4.identity();
 var inverseViewMatrix = mat4.identity();
@@ -159,7 +171,6 @@ startTime = performance.now();
 
 const mouseSpeed = 1.0;
 var pitch = 0, yaw = 0;
-configureCanvas(canvas, context, device, canvasFormat); // add listener for resize
 
 function draw(timeStamp) {
 
@@ -228,6 +239,56 @@ function draw(timeStamp) {
         transformationMatrix.byteLength,
     );
 
+
+    inverseViewMatrix = mat4.inverse(viewMatrix);
+
+
+   // const ViewMatrix = 
+    device.queue.writeBuffer(
+        uniformBuffer,
+        64, // Offset by 64 bytes to leave room for the matrix
+        inverseViewMatrix.buffer,
+        inverseViewMatrix.byteOffset,
+        inverseViewMatrix.byteLength
+    );
+
+
+
+    const inverseModelMatrix = mat4.inverse(modelMatrix);
+
+    device.queue.writeBuffer(
+        uniformBuffer,
+        128, // Offset by 64 bytes to leave room for the matrix
+        inverseModelMatrix.buffer,
+        inverseModelMatrix.byteOffset,
+        inverseModelMatrix.byteLength
+    );
+
+
+
+    const sizeC  = vec3.fromValues(canvas.width,canvas.height,0.0);
+
+    device.queue.writeBuffer(
+        uniformBuffer,
+        192, // Offset by 64 bytes to leave room for the matrix
+        sizeC.buffer,
+        sizeC.byteOffset,
+        sizeC.byteLength
+    );
+
+    device.queue.writeBuffer(
+        uniformBuffer,
+        240, // Offset by 64 bytes to leave room for the matrix
+        cameraPosition.buffer,
+        cameraPosition.byteOffset,
+        cameraPosition.byteLength
+    );
+
+    
+
+
+
+    
     // Upload the data to the texture
     device.queue.writeTexture(
         { texture: volumeTexture }, // Destination texture

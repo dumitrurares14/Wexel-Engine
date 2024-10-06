@@ -4,6 +4,8 @@ export function configureCanvas(canvas, context, device, canvasFormat) {
         console.error("Invalid argument: Expected an HTMLCanvasElement.");
         return;
     }
+
+    console.log("canvas",canvas);
     const devicePixelRatio = window.devicePixelRatio || 1;
     const displayWidth = Math.floor(canvas.clientWidth * devicePixelRatio/1.0);
     const displayHeight = Math.floor(canvas.clientHeight * devicePixelRatio/1.0);
