@@ -1,14 +1,14 @@
 // Declare the canvas and initialization variables
 let canvas = null;
 let leftClick = false;
-let mouseX = 0;
-let mouseY = 0;
-var startX = 0;
-var startY = 0;
+let mouseX = 0.0;
+let mouseY = 0.0;
+var startX = 0.0;
+var startY = 0.0;
 // Global variables for keyboard input
 let keysPressed = {};
-const playerSpeed = 0.1;
-let mouseDelta = [0,0];
+const playerSpeed = 5.1;
+let mouseDelta = [0.0,0.0];
 
 // Function to initialize the canvas and add event listeners
 function initializeCanvas() {
@@ -68,15 +68,15 @@ function onPointerLockChange() {
 
 function OnMouseMove(event)
 {
-    mouseDelta[0] = -event.movementX;
-    mouseDelta[1] = -event.movementY;
-
+    mouseDelta[0] += -event.movementX;
+    mouseDelta[1] += -event.movementY;
+    console.log(event.timeStamp);
     
 }
 
 function ResetMouseDelta()
 {
-    mouseDelta = [0,0];
+    mouseDelta = [0.0,0.];
 }
 
 // Function to handle keydown events

@@ -144,38 +144,32 @@ const bindGroup = device.createBindGroup({
 
 const aspect = canvas.width / canvas.height;
 var projectionMatrix = mat4.perspective((2 * Math.PI) / 5, aspect, 1, 100.0);
-//projectionMatrix[5] *= -1;
-const modelViewProjectionMatrix = mat4.create();
 var viewMatrix = mat4.identity();
 const modelMatrix = mat4.identity();
 var inverseViewMatrix = mat4.identity();
 
-var cameraPosition = vec3.fromValues(0, 0, 10);
-let aim = vec3.fromValues(0, 0, 0);
-let up = vec3.fromValues(0, 1, 0);
+var cameraPosition = vec3.fromValues(0, 0, -10);
 
 var startTime = 0.0;
 var endTime = 0.0;
 startTime = performance.now();
 
 
-var x = 0;
-var y = 0;
-var z = -10;
 
-const mouseSpeed = 0.3;
+
+const mouseSpeed = 1.0;
 var pitch = 0, yaw = 0;
+configureCanvas(canvas, context, device, canvasFormat); // add listener for resize
 
-function draw() {
+function draw(timeStamp) {
 
-
+    
     startTime = performance.now();
-    const deltaTime = (startTime -  endTime)/1000;
+    const deltaTime = (startTime - endTime) / 1000;
 
 
-    yaw += engine.mouseDelta[0] * mouseSpeed*deltaTime;
-    pitch += engine.mouseDelta[1] * mouseSpeed*deltaTime;
-    console.log(yaw)
+    yaw += engine.mouseDelta[0] * mouseSpeed * deltaTime;
+    pitch += engine.mouseDelta[1] * mouseSpeed * deltaTime;
     // Clamp the pitch to prevent flipping
     const maxPitch = Math.PI / 2 - 0.01;
     if (pitch > maxPitch) pitch = maxPitch;
@@ -189,49 +183,31 @@ function draw() {
 
     // Calculate right and up vectors
     const right = vec3.normalize(vec3.cross(direction, vec3.fromValues(0, 1, 0)));
-    vec3.normalize(right, right);
     const up = vec3.normalize(vec3.cross(right, direction));
-    vec3.normalize(up, up);
 
-    const enginePlayerSpeed = engine.playerSpeed *deltaTime;
-    // Update camera position based on key presses
-    if (engine.keysPressed['w']) {
-        x += direction[0] * enginePlayerSpeed;
-        y += direction[1] * enginePlayerSpeed;
-        z += direction[2] * enginePlayerSpeed;
-    }
+    // movement
+    const enginePlayerSpeed = engine.playerSpeed * deltaTime;
+    let scaledDirection = vec3.mulScalar(direction, enginePlayerSpeed);
+    let scaledRight = vec3.mulScalar(right, enginePlayerSpeed);
+    let scaledUp = vec3.mulScalar(up, enginePlayerSpeed);
 
-    if (engine.keysPressed['s']) {
-        x -= direction[0] * enginePlayerSpeed;
-        y -= direction[1] * enginePlayerSpeed;
-        z -= direction[2] * enginePlayerSpeed;
-    }
+    if (engine.keysPressed['w'])
+        cameraPosition = vec3.add(cameraPosition, scaledDirection);
 
-    if (engine.keysPressed['a']) {
-        x -= right[0] * enginePlayerSpeed;
-        y -= right[1] * enginePlayerSpeed;
-        z -= right[2] * enginePlayerSpeed;
-    }
+    if (engine.keysPressed['s'])
+        cameraPosition = vec3.subtract(cameraPosition, scaledDirection);
 
-    if (engine.keysPressed['d']) {
-        x += right[0] * enginePlayerSpeed;
-        y += right[1] * enginePlayerSpeed;
-        z += right[2] * enginePlayerSpeed;
-    }
+    if (engine.keysPressed['a'])
+        cameraPosition = vec3.subtract(cameraPosition, scaledRight);
 
-    if (engine.keysPressed[' ']) { // Spacebar for upward movement
-        x += up[0] * enginePlayerSpeed;
-        y += up[1] * enginePlayerSpeed;
-        z += up[2] * enginePlayerSpeed;
-    }
+    if (engine.keysPressed['d'])
+        cameraPosition = vec3.add(cameraPosition, scaledRight);
 
-    if (engine.keysPressed['Shift']) { // Shift key for downward movement
-        x -= up[0] * enginePlayerSpeed;
-        y -= up[1] * enginePlayerSpeed;
-        z -= up[2] * enginePlayerSpeed;
-    }
+    if (engine.keysPressed[' '])
+        cameraPosition = vec3.add(cameraPosition, scaledUp);
 
-    const cameraPosition = vec3.fromValues(x, y, z);
+    if (engine.keysPressed['Shift'])
+        cameraPosition = vec3.subtract(cameraPosition, scaledUp);
 
     const aim = vec3.add(cameraPosition, direction);
 
@@ -240,10 +216,8 @@ function draw() {
 
     engine.UpdateMouseStart();
 
-    configureCanvas(canvas, context, device, canvasFormat);
 
     const transformationMatrix = mat4.multiply(projectionMatrix, viewMatrix, modelMatrix);
-    //const transformationMatrix = mat4.multiply(projectionMatrix, mat4.inverse(viewMatrix), modelViewProjectionMatrix)
 
 
     device.queue.writeBuffer(
@@ -293,10 +267,10 @@ function draw() {
 
     //fpsDisplay = document.getElementById('fps');
     //fpsDisplay.textContent = `Frame Time: ${frameTime.toFixed(3)} ms`;
-
-    requestAnimationFrame(draw);
-    endTime = startTime;
     engine.ResetMouseDelta();
+
+    endTime = startTime;
+    requestAnimationFrame(draw);
 }
 
-draw();
+requestAnimationFrame(draw);
