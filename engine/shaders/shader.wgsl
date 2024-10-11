@@ -1,4 +1,3 @@
-
 struct Uniforms {
   modelViewProjectionMatrix : mat4x4f,
    viewMatrix : mat4x4f,
@@ -6,6 +5,7 @@ struct Uniforms {
   screenX : f32,
   screenY : f32,
   dummy: f32,
+   dummy2: f32,
   cameraPos : vec3<f32>
 }
 @binding(0) @group(0) var<uniform> uniforms : Uniforms;
@@ -74,7 +74,8 @@ fn fragmentMain(
 ) -> @location(0) vec4f 
 {
 
-  let pixelRayDirection = rayDirection(60.0, vec2<f32>(uniforms.screenX, uniforms.screenY), fragCoord.xy);
+  var pixelRayDirection = rayDirection(90.0, vec2<f32>(uniforms.screenX, uniforms.screenY), fragCoord.xy);
+  pixelRayDirection.y = -pixelRayDirection.y;
   let worldRayDirection = normalize(uniforms.viewMatrix * vec4<f32>(pixelRayDirection, 0.0)).xyz;
   let modelRayDirection = (uniforms.modelMatrix * vec4<f32>(worldRayDirection, 0.0)).xyz;
 
@@ -84,13 +85,17 @@ fn fragmentMain(
     var tMax: f32;
 
     // Call the slab function
-    let hit: bool = slab(vec3<f32>(0,0,0),vec3<f32>(1,1,1), modelCamPos+0.5, 1.0/modelRayDirection, &tMin, &tMax);
+     slab(vec3<f32>(0.0),vec3<f32>(1.0), modelCamPos,1.0/ modelRayDirection, &tMin, &tMax);
 
-  let rayPosOnMeshSurface = modelCamPos+ 0.5 + modelRayDirection * max(tMin-1.0/300,0.0);
+   
+//* max(mint - (mint / 100.0), 0);
+  let rayPosOnMeshSurface = modelCamPos + modelRayDirection * max(tMin - (tMin / 100.0), 0);
 
   let color = textureSample(texture, sampler0, vec3( fragUV.x, fragUV.y, 0.3));
   //let vec4Test = vec4<f32>(pixelRayDirection.x, pixelRayDirection.y, pixelRayDirection.z, 1.0);
-  
-  let vec4Test = vec4<f32>(rayPosOnMeshSurface.x, rayPosOnMeshSurface.y, rayPosOnMeshSurface.z, 1.0);
+
+  //let vec4Test = vec4<f32>(modelCamPos.x,modelCamPos.y,modelCamPos.z, 1.0);
+  //let invModelRayDirection = 1.0 / modelRayDirection;
+  let vec4Test = vec4<f32>(rayPosOnMeshSurface.xyz, 1.0);
   return vec4Test;
 }

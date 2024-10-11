@@ -155,9 +155,12 @@ const bindGroup = device.createBindGroup({
 
 
 let aspect = canvas.width / canvas.height;
-let projectionMatrix = mat4.perspective((2 * Math.PI) / 5, aspect, 1, 100.0);
+let projectionMatrix = mat4.perspective(Math.PI/2.0, aspect, 0.01, 100.0);
 var viewMatrix = mat4.identity();
-const modelMatrix = mat4.identity();
+var modelMatrix = mat4.identity();
+
+//modelMatrix= mat4.scale(modelMatrix,vec3.fromValues(1, 1, 1));
+
 var inverseViewMatrix = mat4.identity();
 
 var cameraPosition = vec3.fromValues(0, 0, -10);
@@ -228,8 +231,7 @@ function draw(timeStamp) {
     engine.UpdateMouseStart();
 
 
-    const transformationMatrix = mat4.multiply(projectionMatrix, viewMatrix, modelMatrix);
-
+    const transformationMatrix =mat4.multiply( mat4.multiply(projectionMatrix, viewMatrix),modelMatrix);
 
     device.queue.writeBuffer(
         uniformBuffer,
@@ -276,9 +278,10 @@ function draw(timeStamp) {
         sizeC.byteLength
     );
 
+    console.log(cameraPosition)
     device.queue.writeBuffer(
         uniformBuffer,
-        240, // Offset by 64 bytes to leave room for the matrix
+        208, // Offset by 64 bytes to leave room for the matrix
         cameraPosition.buffer,
         cameraPosition.byteOffset,
         cameraPosition.byteLength
