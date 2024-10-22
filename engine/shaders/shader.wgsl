@@ -33,15 +33,17 @@ fn vertexMain(
 @binding(1) @group(0) var texture : texture_3d<f32>;
 @binding(2) @group(0) var sampler0 : sampler;
 
+struct SlabReturn {
+  tMin: f32,
+  tMax: f32
+}
 // Define the slab function
 fn slab(
     p0: vec3<f32>,
     p1: vec3<f32>,
     rayOrigin: vec3<f32>,
-    invRaydir: vec3<f32>,
-    outTMin: ptr<function, f32>,
-    outTMax: ptr<function, f32>
-) -> bool {
+    invRaydir: vec3<f32>
+) -> SlabReturn {
     let t0 = (p0 - rayOrigin) * invRaydir;
     let t1 = (p1 - rayOrigin) * invRaydir;
     
@@ -51,12 +53,9 @@ fn slab(
     let maxtmin = max(max(tmin.x, tmin.y), tmin.z);
     let mintmax = min(min(tmax.x, tmax.y), tmax.z);
     
-    // Write to output pointers
-    *outTMin = maxtmin;
-    *outTMax = mintmax;
+    let slabReturn = SlabReturn(maxtmin, mintmax);
     
-    // Return the boolean result
-    return maxtmin <= mintmax;
+    return slabReturn;
 }
 
 fn rayDirection(fieldOfView: f32, size: vec2<f32>, fragCoord: vec2<f32>) -> vec3<f32> {
@@ -76,26 +75,30 @@ fn fragmentMain(
 
   var pixelRayDirection = rayDirection(90.0, vec2<f32>(uniforms.screenX, uniforms.screenY), fragCoord.xy);
   pixelRayDirection.y = -pixelRayDirection.y;
+  //pixelRayDirection.y = pixelRayDirection.y * -1.0 + uniforms.screenY;
+
   let worldRayDirection = normalize(uniforms.viewMatrix * vec4<f32>(pixelRayDirection, 0.0)).xyz;
   let modelRayDirection = (uniforms.modelMatrix * vec4<f32>(worldRayDirection, 0.0)).xyz;
-
   let modelCamPos = (uniforms.modelMatrix * vec4<f32>(uniforms.cameraPos, 1.0)).xyz;
- // Output variables
-    var tMin: f32;
-    var tMax: f32;
 
-    // Call the slab function
-     slab(vec3<f32>(0.0),vec3<f32>(1.0), modelCamPos,1.0/ modelRayDirection, &tMin, &tMax);
 
+var slabReturn = slab(vec3<f32>(0.0),vec3<f32>(1.0), modelCamPos + 0.5,1.0/ modelRayDirection);
+
+var tMin = slabReturn.tMin;
+var tMax = slabReturn.tMax;
+
+  //let rayPosOnMeshSurface = modelCamPos + modelRayDirection
    
 //* max(mint - (mint / 100.0), 0);
-  let rayPosOnMeshSurface = modelCamPos + modelRayDirection * max(tMin - (tMin / 100.0), 0);
+  //let rayPosOnMeshSurface = modelCamPos +0.5+ modelRayDirection * max(tMin - (tMin / 100.0), 0);
 
-  let color = textureSample(texture, sampler0, vec3( fragUV.x, fragUV.y, 0.3));
+  //let color = textureSample(texture, sampler0, vec3( fragUV.x, fragUV.y, 0.3));
   //let vec4Test = vec4<f32>(pixelRayDirection.x, pixelRayDirection.y, pixelRayDirection.z, 1.0);
 
   //let vec4Test = vec4<f32>(modelCamPos.x,modelCamPos.y,modelCamPos.z, 1.0);
   //let invModelRayDirection = 1.0 / modelRayDirection;
-  let vec4Test = vec4<f32>(rayPosOnMeshSurface.xyz, 1.0);
+  //let vec4Test = vec4<f32>(rayPosOnMeshSurface.xyz, 1.0);
+  let vec4Test = vec4<f32>(tMin,tMin,tMin, 1.0);
+
   return vec4Test;
 }
