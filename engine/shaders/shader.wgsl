@@ -35,7 +35,8 @@ fn vertexMain(
 
 struct SlabReturn {
   tMin: f32,
-  tMax: f32
+  tMax: f32,
+  intersects: bool
 }
 // Define the slab function
 fn slab(
@@ -62,45 +63,18 @@ fn slab(
     let maxtmin = max(max(tmin.x, tmin.y), tmin.z);
     let mintmax = min(min(tmax.x, tmax.y), tmax.z);
     
-    let slabReturn = SlabReturn(maxtmin, mintmax);
      let intersects = maxtmin < mintmax && mintmax > 0.0;
+    let slabReturn = SlabReturn(maxtmin, mintmax,intersects);
      if(intersects){
          return slabReturn;
      }else{
-          return SlabReturn(0.0, 0.0);
+          return SlabReturn(0.0, 0.0,intersects);
      }
     
     
 }
 
-fn debugSlab(
-    p0: vec3<f32>,
-    p1: vec3<f32>,
-    rayOrigin: vec3<f32>,
-    invRaydir: vec3<f32>
-) -> vec3<f32> {
-    let t0 = (p0 - rayOrigin) * invRaydir;
-    let t1 = (p1 - rayOrigin) * invRaydir;
-    
-     let tmin = vec3<f32>(
-        min(t0.x, t1.x),
-        min(t0.y, t1.y),
-        min(t0.z, t1.z)
-    );
 
-    let tmax = vec3<f32>(
-        max(t0.x, t1.x),
-        max(t0.y, t1.y),
-        max(t0.z, t1.z)
-    );
-    
-    let maxtmin = max(max(tmin.x, tmin.y), tmin.z);
-    let mintmax = min(min(tmax.x, tmax.y), tmax.z);
-    
-    let slabReturn = SlabReturn(maxtmin, mintmax);
-    
-    return t0;
-}
 
 fn rayDirection(fieldOfView: f32, size: vec2<f32>, fragCoord: vec2<f32>) -> vec3<f32> {
     let xy = fragCoord - size / 2.0;
@@ -126,25 +100,30 @@ fn fragmentMain(
   let modelCamPos = (uniforms.modelMatrix * vec4<f32>(uniforms.cameraPos, 1.0)).xyz;
 
   let invModelRayDirection = 1.0 / modelRayDirection;
-  let testCamPos = modelCamPos;
-let slabReturn = slab(vec3<f32>(-1.0),vec3<f32>(1.0), testCamPos,invModelRayDirection);
+  let testCamPos = modelCamPos+0.5;
+let slabReturn = slab(vec3<f32>(0.0),vec3<f32>(1.0), testCamPos,invModelRayDirection);
 //let slabReturn = debugSlab(vec3(0.0),vec3(1.0), testCamPos+0.5,invModelRayDirection);
 
 var tMin = slabReturn.tMin;
 var tMax = slabReturn.tMax;
+var intersects = slabReturn.intersects;
+if(!intersects)
+{
+  discard;
+}
 
   //let rayPosOnMeshSurface = modelCamPos + modelRayDirection
    
 //* max(mint - (mint / 100.0), 0);
-  //let rayPosOnMeshSurface = modelCamPos +0.5+ modelRayDirection * max(tMin - (tMin / 100.0), 0);
+  let rayPosOnMeshSurface = modelCamPos+0.5+ modelRayDirection * max(tMin - 1.0/300.0,0);
 
   //let color = textureSample(texture, sampler0, vec3( fragUV.x, fragUV.y, 0.3));
   //let vec4Test = vec4<f32>(pixelRayDirection.x, pixelRayDirection.y, pixelRayDirection.z, 1.0);
 
   //let vec4Test = vec4<f32>(modelCamPos.x,modelCamPos.y,modelCamPos.z, 1.0);
   //let invModelRayDirection = 1.0 / modelRayDirection;
-  //let vec4Test = vec4<f32>(slabReturn.xyz, 1.0);
-  let vec4Test = vec4<f32>(tMin,tMin,tMin, 1.0);
+  let vec4Test = vec4<f32>(rayPosOnMeshSurface.xyz, 1.0);
+  //let vec4Test = vec4<f32>(tMin,tMin,tMin, 1.0);
 
   return vec4Test;
 }
