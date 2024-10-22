@@ -159,7 +159,7 @@ let projectionMatrix = mat4.perspective(Math.PI/2.0, aspect, 0.01, 100.0);
 var viewMatrix = mat4.identity();
 var modelMatrix = mat4.identity();
 
-//modelMatrix= mat4.scale(modelMatrix,vec3.fromValues(1, 1, 1));
+modelMatrix= mat4.scale(modelMatrix,vec3.fromValues(4, 4, 4));
 
 var inverseViewMatrix = mat4.identity();
 

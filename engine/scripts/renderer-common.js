@@ -52,7 +52,7 @@ export function CreateRenderPipeline(device,bindGroupLayout,shaderCode)
         primitive:
         {
             topology: "triangle-list",
-            cullMode: "back"
+            cullMode: "none"
         },
         depthStencil: {
             depthWriteEnabled: true,
