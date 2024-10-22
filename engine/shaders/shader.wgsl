@@ -47,15 +47,59 @@ fn slab(
     let t0 = (p0 - rayOrigin) * invRaydir;
     let t1 = (p1 - rayOrigin) * invRaydir;
     
-    let tmin = min(t0, t1);
-    let tmax = max(t0, t1);
+     let tmin = vec3<f32>(
+        min(t0.x, t1.x),
+        min(t0.y, t1.y),
+        min(t0.z, t1.z)
+    );
+
+    let tmax = vec3<f32>(
+        max(t0.x, t1.x),
+        max(t0.y, t1.y),
+        max(t0.z, t1.z)
+    );
+    
+    let maxtmin = max(max(tmin.x, tmin.y), tmin.z);
+    let mintmax = min(min(tmax.x, tmax.y), tmax.z);
+    
+    let slabReturn = SlabReturn(maxtmin, mintmax);
+     let intersects = maxtmin < mintmax && mintmax > 0.0;
+     if(intersects){
+         return slabReturn;
+     }else{
+          return SlabReturn(0.0, 0.0);
+     }
+    
+    
+}
+
+fn debugSlab(
+    p0: vec3<f32>,
+    p1: vec3<f32>,
+    rayOrigin: vec3<f32>,
+    invRaydir: vec3<f32>
+) -> vec3<f32> {
+    let t0 = (p0 - rayOrigin) * invRaydir;
+    let t1 = (p1 - rayOrigin) * invRaydir;
+    
+     let tmin = vec3<f32>(
+        min(t0.x, t1.x),
+        min(t0.y, t1.y),
+        min(t0.z, t1.z)
+    );
+
+    let tmax = vec3<f32>(
+        max(t0.x, t1.x),
+        max(t0.y, t1.y),
+        max(t0.z, t1.z)
+    );
     
     let maxtmin = max(max(tmin.x, tmin.y), tmin.z);
     let mintmax = min(min(tmax.x, tmax.y), tmax.z);
     
     let slabReturn = SlabReturn(maxtmin, mintmax);
     
-    return slabReturn;
+    return t0;
 }
 
 fn rayDirection(fieldOfView: f32, size: vec2<f32>, fragCoord: vec2<f32>) -> vec3<f32> {
@@ -81,8 +125,10 @@ fn fragmentMain(
   let modelRayDirection = (uniforms.modelMatrix * vec4<f32>(worldRayDirection, 0.0)).xyz;
   let modelCamPos = (uniforms.modelMatrix * vec4<f32>(uniforms.cameraPos, 1.0)).xyz;
 
-
-var slabReturn = slab(vec3<f32>(0.0),vec3<f32>(1.0), modelCamPos + 0.5,1.0/ modelRayDirection);
+  let invModelRayDirection = 1.0 / modelRayDirection;
+  let testCamPos = modelCamPos;
+let slabReturn = slab(vec3<f32>(-1.0),vec3<f32>(1.0), testCamPos,invModelRayDirection);
+//let slabReturn = debugSlab(vec3(0.0),vec3(1.0), testCamPos+0.5,invModelRayDirection);
 
 var tMin = slabReturn.tMin;
 var tMax = slabReturn.tMax;
@@ -97,7 +143,7 @@ var tMax = slabReturn.tMax;
 
   //let vec4Test = vec4<f32>(modelCamPos.x,modelCamPos.y,modelCamPos.z, 1.0);
   //let invModelRayDirection = 1.0 / modelRayDirection;
-  //let vec4Test = vec4<f32>(rayPosOnMeshSurface.xyz, 1.0);
+  //let vec4Test = vec4<f32>(slabReturn.xyz, 1.0);
   let vec4Test = vec4<f32>(tMin,tMin,tMin, 1.0);
 
   return vec4Test;
