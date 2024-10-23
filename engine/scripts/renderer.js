@@ -7,6 +7,7 @@ import {
     mat4,
 } from 'https://wgpu-matrix.org/dist/3.x/wgpu-matrix.module.js';
 
+
 import * as engine from './engine.js';
 
 engine.initializeCanvas();
@@ -90,7 +91,7 @@ let depthTexture = device.createTexture({
 let depthTextureView = depthTexture.createView();
 
 var volumeTexture = device.createTexture({
-    size: [256, 256, 256],
+    size: [128, 128, 128],
     dimension: "3d",
     format: "rgba8unorm", // Choose the appropriate format
     usage:
@@ -98,34 +99,48 @@ var volumeTexture = device.createTexture({
         GPUTextureUsage.COPY_DST
 });
 // Define texture dimensions and format
-const width = 256;
-const height = 256;
-const depth = 256;
+const width = 128;
+const height = 128;
+const depth = 128;
 const bytesPerPixel = 4; // rgba8unorm
 const dataSize = width * height * depth * bytesPerPixel;
 
 // Create a Uint8Array to hold the texture data
 const textureData = new Uint8Array(dataSize);
+noise.seed(Math.random());
 
+//const noise2D = makeNoise2D(Date.now()); // Using current date as seed
 // Fill the data with a gradient
 for (let z = 0; z < depth; z++) {
     for (let y = 0; y < height; y++) {
         for (let x = 0; x < width; x++) {
             const index = (z * width * height + y * width + x) * bytesPerPixel;
 
+        //    const value = (noise2D(x, y) + 1) * 128;
+        //    textureData[index] = value;       // Red channel
+        //    textureData[index + 1] = value;  // Green channel
+        //    textureData[index + 2] = value;   // Blue channel
+        //    textureData[index + 3] = value;                 // Alpha channel
+        // if ((y==0 || z==depth-1 || x == width-1 ||z==0 ||x==0)&& y<50 ) {
+        //     textureData[index] = 255;       // Red channel
+        //     textureData[index + 1] = 255;  // Green channel
+        //     textureData[index + 2] = 255;   // Blue channel
+        //     textureData[index + 3] = 255;                 // Alpha channel
+        // }
+        // else 
+        // {
+        //     textureData[index] = 0;       // Red channel
+        //     textureData[index + 1] = 0;  // Green channel
+        //     textureData[index + 2] = 0;   // Blue channel
+        //     textureData[index + 3] = 0;       
+        // } 
+        var value = noise.simplex3(x / 100, y / 100, z/100) * 256.0;
 
-            if (y% 2 == 0 && x % 2 == 0 && z % 2 == 0) {
-                textureData[index] = 255;       // Red channel
-                textureData[index + 1] = 255;  // Green channel
-                textureData[index + 2] = 255;   // Blue channel
-                textureData[index + 3] = 255;                 // Alpha channel
-            }
-            else {
-                textureData[index] = 0;       // Red channel
-                textureData[index + 1] = 0;  // Green channel
-                textureData[index + 2] = 0;   // Blue channel
-                textureData[index + 3] = 0;                 // Alpha channel
-            }
+        textureData[index] = value;       // Red channel
+        textureData[index + 1] = value;  // Green channel
+        textureData[index + 2] = value;   // Blue channel
+        textureData[index + 3] = value;     
+
         }
     }
 }

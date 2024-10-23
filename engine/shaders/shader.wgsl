@@ -42,7 +42,8 @@ struct SlabReturn {
 struct TraverseVoxelReturn
 {
   hit: bool,
-  normal: vec3<f32>
+  normal: vec3<f32>,
+  outMinT: f32
 }
 
 fn traverse_voxel(
@@ -53,7 +54,7 @@ fn traverse_voxel(
 {
 
  // var test = vec3<f32>(0.0,0.0,0.0);
-  var result = TraverseVoxelReturn(false,vec3<f32>(0.0,0.0,0.0));
+  var result = TraverseVoxelReturn(false,vec3<f32>(0.0,0.0,0.0),0.0);
   var rd = normalize(rd_in);
   
   var tDelta = abs(1.0 /rd);
@@ -89,9 +90,11 @@ fn traverse_voxel(
         }
 
         var res = textureLoad(texture, vec3<i32>(pos),0).w;
-        if (res > 0.0)
+        if (res > 0.75)
         {
           result.hit = true;
+          let slabReturn = slab(pos,pos+1.0,ro,1.0/rd);
+          result.outMinT = slabReturn.tMin;
           return result;
         }
   }
@@ -181,10 +184,20 @@ if(!intersects)
 //* max(mint - (mint / 100.0), 0);
   let rayPosOnMeshSurface = modelCamPos+0.5+ modelRayDirection * max(tMin - 1.0/300.0,0);
 
-var traverseVoxelReturn = traverse_voxel(rayPosOnMeshSurface*128.0, modelRayDirection, 10.0);
+var traverseVoxelReturn = traverse_voxel(rayPosOnMeshSurface*128.0, modelRayDirection, 256.0);
+let norm = normalize(traverseVoxelReturn.normal);
+let worldHitLocation = uniforms.cameraPos + worldRayDirection * (traverseVoxelReturn.outMinT + max(tMin,0.0));
+let impactPoint = ((modelCamPos + 0.5 + modelRayDirection * (traverseVoxelReturn.outMinT + max(tMin, 0)))) * 128 + (norm * 0.0001);
+let impactPointws = uniforms.cameraPos + worldRayDirection * (traverseVoxelReturn.outMinT + max(tMin,0.0));
+
+let lightD = vec3<f32>(0.3,0.1,-0.2);
+
+var diffuse = max(dot(norm,lightD),0.0);
+var diffuseu = diffuse * vec3<f32>(1.0,1.0,1.0);
+
 if(traverseVoxelReturn.hit)
 {
-  return vec4<f32>(1.0);
+  return vec4<f32>(diffuseu,1.0);
 }else{
   discard;
 }
@@ -195,6 +208,10 @@ if(traverseVoxelReturn.hit)
   //let invModelRayDirection = 1.0 / modelRayDirection;
   //let vec4Test = vec4<f32>(rayPosOnMeshSurface.xyz, 1.0);
   //let vec4Test = vec4<f32>(tMin,tMin,tMin, 1.0);
+
+
+
+
     return vec4<f32>(1.0);
 
   //return vec4Test;
