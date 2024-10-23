@@ -38,6 +38,68 @@ struct SlabReturn {
   tMax: f32,
   intersects: bool
 }
+
+struct TraverseVoxelReturn
+{
+  hit: bool,
+  normal: vec3<f32>
+}
+
+fn traverse_voxel(
+  ro: vec3<f32>,
+  rd_in: vec3<f32>,
+  maximumDistance: f32
+) -> TraverseVoxelReturn
+{
+
+ // var test = vec3<f32>(0.0,0.0,0.0);
+  var result = TraverseVoxelReturn(false,vec3<f32>(0.0,0.0,0.0));
+  var rd = normalize(rd_in);
+  
+  var tDelta = abs(1.0 /rd);
+  var tMax = tDelta - fract(ro * clamp( sign(rd),vec3<f32>(-1,-1,-1),vec3<f32>(1,1,1))) * tDelta;
+  var steps = vec3<i32>(sign(rd));
+  var pos = vec3<f32>(floor(ro));
+
+  for(var i: i32 = 0;i<128*2;i++)
+  {
+    if (pos.x < -1 || pos.x > 129 || pos.y < -1 || pos.y > 129 || pos.z < -1 || pos.z > 129)
+        {
+          result.hit = false;
+          return result;
+        }
+
+        if (tMax.x < tMax.y && tMax.x < tMax.z)
+        {
+            pos.x += f32(steps.x);
+            tMax.x += tDelta.x;
+            result.normal = vec3<f32>( f32(-steps.x), 0.0, 0.0);
+        }
+        else if (tMax.y < tMax.z)
+        {
+            pos.y += f32(steps.y);
+            tMax.y += tDelta.y;
+            result.normal = vec3<f32>(0.0, f32(-steps.y), 0.0);
+        }
+        else
+        {
+            pos.z += f32(steps.z);
+            tMax.z += tDelta.z;
+            result.normal = vec3<f32>(0.0, 0.0, f32(-steps.z));
+        }
+
+        var res = textureLoad(texture, vec3<i32>(pos),0).w;
+        if (res > 0.0)
+        {
+          result.hit = true;
+          return result;
+        }
+  }
+
+  
+  return result;
+}
+
 // Define the slab function
 fn slab(
     p0: vec3<f32>,
@@ -83,6 +145,7 @@ fn rayDirection(fieldOfView: f32, size: vec2<f32>, fragCoord: vec2<f32>) -> vec3
 }
 
 
+
 @fragment
 fn fragmentMain(
   @location(0) fragUV: vec2f,
@@ -112,18 +175,27 @@ if(!intersects)
   discard;
 }
 
+
   //let rayPosOnMeshSurface = modelCamPos + modelRayDirection
    
 //* max(mint - (mint / 100.0), 0);
   let rayPosOnMeshSurface = modelCamPos+0.5+ modelRayDirection * max(tMin - 1.0/300.0,0);
 
+var traverseVoxelReturn = traverse_voxel(rayPosOnMeshSurface*128.0, modelRayDirection, 10.0);
+if(traverseVoxelReturn.hit)
+{
+  return vec4<f32>(1.0);
+}else{
+  discard;
+}
   //let color = textureSample(texture, sampler0, vec3( fragUV.x, fragUV.y, 0.3));
   //let vec4Test = vec4<f32>(pixelRayDirection.x, pixelRayDirection.y, pixelRayDirection.z, 1.0);
 
   //let vec4Test = vec4<f32>(modelCamPos.x,modelCamPos.y,modelCamPos.z, 1.0);
   //let invModelRayDirection = 1.0 / modelRayDirection;
-  let vec4Test = vec4<f32>(rayPosOnMeshSurface.xyz, 1.0);
+  //let vec4Test = vec4<f32>(rayPosOnMeshSurface.xyz, 1.0);
   //let vec4Test = vec4<f32>(tMin,tMin,tMin, 1.0);
+    return vec4<f32>(1.0);
 
-  return vec4Test;
+  //return vec4Test;
 }

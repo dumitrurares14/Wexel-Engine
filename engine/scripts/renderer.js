@@ -87,8 +87,10 @@ let depthTexture = device.createTexture({
     usage: GPUTextureUsage.RENDER_ATTACHMENT,
 });
 
+let depthTextureView = depthTexture.createView();
+
 var volumeTexture = device.createTexture({
-    size: [128, 128, 128],
+    size: [256, 256, 256],
     dimension: "3d",
     format: "rgba8unorm", // Choose the appropriate format
     usage:
@@ -96,9 +98,9 @@ var volumeTexture = device.createTexture({
         GPUTextureUsage.COPY_DST
 });
 // Define texture dimensions and format
-const width = 128;
-const height = 128;
-const depth = 128;
+const width = 256;
+const height = 256;
+const depth = 256;
 const bytesPerPixel = 4; // rgba8unorm
 const dataSize = width * height * depth * bytesPerPixel;
 
@@ -112,10 +114,10 @@ for (let z = 0; z < depth; z++) {
             const index = (z * width * height + y * width + x) * bytesPerPixel;
 
 
-            if (z % 2 == 0) {
-                textureData[index] = 244;       // Red channel
-                textureData[index + 1] = 0;  // Green channel
-                textureData[index + 2] = 0;   // Blue channel
+            if (y% 2 == 0 && x % 2 == 0 && z % 2 == 0) {
+                textureData[index] = 255;       // Red channel
+                textureData[index + 1] = 255;  // Green channel
+                textureData[index + 2] = 255;   // Blue channel
                 textureData[index + 3] = 255;                 // Alpha channel
             }
             else {
@@ -278,7 +280,7 @@ function draw(timeStamp) {
         sizeC.byteLength
     );
 
-    console.log(cameraPosition)
+    //console.log(cameraPosition)
     device.queue.writeBuffer(
         uniformBuffer,
         208, // Offset by 64 bytes to leave room for the matrix
@@ -310,7 +312,7 @@ function draw(timeStamp) {
             storeOp: "store",
         }],
         depthStencilAttachment: {
-            view: depthTexture.createView(),
+            view: depthTextureView,
             depthClearValue: 1.0,
             depthLoadOp: 'clear',
             depthStoreOp: 'store',
