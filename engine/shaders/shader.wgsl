@@ -65,7 +65,7 @@ struct TraverseVoxelReturn
   hit: bool,
   normal: vec3<f32>,
   outMinT: f32,
-  matIndex:i32
+  matIndex:i32,
   voxelLocationInGrid: vec3<f32>
 }
 
