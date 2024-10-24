@@ -97,6 +97,10 @@ fn traverse_voxel(
           let slabReturn = slab(pos,pos+1.0,ro,1.0/rd);
           result.outMinT = slabReturn.tMin;
           result.voxelLocationInGrid = pos;
+          if(slabReturn.tMin > maximumDistance * 128.0) 
+          {
+            result.hit = false;
+          }
           return result;
         }
   }
@@ -187,7 +191,7 @@ fn fragmentMain(
   distanceToVoxelSurface = traverseVoxelReturn.outMinT;
   let worldHitLocation = uniforms.cameraPos + worldRayDirection * (traverseVoxelReturn.outMinT + max(tMin,0.0));
 
-  let newSlabReturn = slab((traverseVoxelReturn.voxelLocationInGrid/128.0) - 0.5,((traverseVoxelReturn.voxelLocationInGrid / 128.0) - 0.5) + 1 / 128.0, modelCamPos,
+  let newSlabReturn = slab((traverseVoxelReturn.voxelLocationInGrid/128.0) - 0.5,((traverseVoxelReturn.voxelLocationInGrid / 128.0) - 0.5) + 1.0 / 128.0, modelCamPos,
           1 / modelRayDirection);
 
   let impactPoint = ((modelCamPos + 0.5 + modelRayDirection * (newSlabReturn.tMin))) * 128.0 + (norm * 0.0001);
