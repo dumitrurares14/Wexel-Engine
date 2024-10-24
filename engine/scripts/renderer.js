@@ -135,7 +135,7 @@ for (let z = 0; z < depth; z++) {
 
            
         
-                textureData[index] = 255 * Math.round((Math.random()*50* Math.random())/50);       // Red channel
+                textureData[index] = 255 * Math.round((Math.random()*1));       // Red channel
 
             textureData[index + 1] = value;  // Green channel
             textureData[index + 2] = value;   // Blue channel
@@ -163,11 +163,11 @@ const uniformBuffer = device.createBuffer({
 const materials = [
     {
         color: [0.596, 0.608, 0.639, 1.0],
-        metallic: 0.5,
-        roughness: 0.2,
+        metallic: 1.0,
+        roughness: 1.0,
     },
     {
-        color: [0.541, 0.549, 0.561, 1.0],
+        color: [0.741, 0.549, 0.461, 1.0],
         metallic: 0.3,
         roughness: 0.7,
     }
@@ -335,8 +335,9 @@ function draw(timeStamp) {
     );
 
 
-
-    const sizeC = vec3.fromValues(canvas.width, canvas.height, 0.0);
+    let time =  performance.now();
+    //console.log(time);
+    const sizeC = vec3.fromValues(canvas.width, canvas.height, time);
 
     device.queue.writeBuffer(
         uniformBuffer,

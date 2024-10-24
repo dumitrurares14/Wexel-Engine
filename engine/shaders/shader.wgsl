@@ -1,10 +1,11 @@
+
 struct Uniforms {
   modelViewProjectionMatrix : mat4x4f,
    viewMatrix : mat4x4f,
    modelMatrix: mat4x4f,
   screenX : f32,
   screenY : f32,
-  dummy: f32,
+  time: f32,
    dummy2: f32,
   cameraPos : vec3<f32>,
   dummy3: f32,
@@ -13,9 +14,19 @@ struct Uniforms {
 @binding(0) @group(0) var<uniform> uniforms : Uniforms;
 
 
+fn hash12(p: vec2<f32>)->f32
+{
+    var p3 = fract(vec3(p.xyx) * .1031);
+    p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.x + p3.y) * p3.z);
+}
 
-
-
+fn hash13(p3: vec3<f32>) -> f32
+{
+    var p3New = fract(p3 * .1031);
+    p3New += dot(p3New, p3New.zyx + 31.32);
+    return fract((p3New.x + p3New.y) * p3New.z);
+}
 
 
 struct VertexOutput {
@@ -190,6 +201,8 @@ fn fragmentMain(
 {
 
   var pixelRayDirection = rayDirection(90.0, vec2<f32>(uniforms.screenX, uniforms.screenY), fragCoord.xy);
+  let worldRayDirection2 = normalize(uniforms.viewMatrix * vec4<f32>(pixelRayDirection, 0.0)).xyz;
+  
   pixelRayDirection.y = -pixelRayDirection.y;
   //pixelRayDirection.y = pixelRayDirection.y * -1.0 + uniforms.screenY;
 
@@ -239,23 +252,43 @@ let color = material.color;
   }
 
 
-  let traverseShadow = traverse_voxel(impactPoint  , lightD, 256.0);
-  var shadow = 1.0;
-  if(traverseShadow.hit)
+  var shadow = 0.0;
+  var numSamples = 4;
+  for(var i: i32 = 1;i<=numSamples;i++)
   {
-    shadow = 0.3;
+    var rand = 124.5 * worldHitLocation.xy;
+    var newDirection = vec3<f32>(0,0,0);
+    newDirection.x = norm.x + (sin(hash12(rand*1*f32(i))*2-1));
+    newDirection.y = norm.y + (sin(hash12(rand*2*f32(i))*2-1));
+    newDirection.z = norm.z + (sin(hash12(rand*3*f32(i))*2-1));
+
+    newDirection = normalize(newDirection);
+    let traverseShadow = traverse_voxel(impactPoint  , lightD +newDirection*0.05 , 256.0);
+    if(traverseShadow.hit)
+    {
+      shadow += 1.0;
+    }
+
   }
-  let result = vec4<f32>(diffuseu * shadow  ,1.0)*color;
+  shadow = shadow / f32(numSamples);
+
+
+  var brdfDirection = normalize(impactPoint- (modelCamPos+0.5));
+  
+  //let result =  cook_torrance_brdf(norm ,brdfDirection,-lightD,color.xyz,material.metallic,material.roughness)*5;
+let result = diffuseu*  (1.7- shadow)*  color.xyz;
+  //
+  //vec4<f32>(diffuseu *  (1.0 - shadow)  ,1.0)  *  color;
 
 
   let fogDensity = 0.01;
-let fogColor = vec3<f32>(0.737, 0.867, 0.871);
+  let fogColor = vec3<f32>(0.737, 0.867, 0.871);
 
-let fogFactor = exp(-pow(distanceToVoxelSurface * 1.1 * fogDensity, 2.0));
+  let fogFactor = exp(-pow(distanceToVoxelSurface * 1.1 * fogDensity, 2.0));
 // Mix fog color based on depth
-let  finalColor = mix(result.xyz, fogColor, 1.0 - fogFactor);
+  let  finalColor = mix(result.xyz, fogColor, 1.0 - fogFactor);
 
 
-  return vec4<f32>(finalColor,1.0);
+  return vec4<f32>(result,1.0);
 
 }
