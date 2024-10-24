@@ -11,6 +11,11 @@ struct Uniforms {
 @binding(0) @group(0) var<uniform> uniforms : Uniforms;
 
 
+
+
+
+
+
 struct VertexOutput {
   @builtin(position) Position : vec4f,
   @location(0) fragUV : vec2f,
@@ -33,6 +38,22 @@ fn vertexMain(
 @binding(1) @group(0) var texture : texture_3d<f32>;
 @binding(2) @group(0) var sampler0 : sampler;
 
+
+struct Material {
+  color: vec4<f32>,
+  metallic: f32,
+  roughness: f32,
+  padding: array<f32, 2>,
+};
+
+struct MaterialBuffer {
+  materials: array<Material>,
+};
+
+@binding(3) @group(0)
+var<storage, read> materialBuffer: MaterialBuffer;
+
+
 struct SlabReturn {
   tMin: f32,
   tMax: f32,
@@ -43,7 +64,8 @@ struct TraverseVoxelReturn
 {
   hit: bool,
   normal: vec3<f32>,
-  outMinT: f32
+  outMinT: f32,
+  matIndex:i32
 }
 
 fn traverse_voxel(
@@ -54,7 +76,7 @@ fn traverse_voxel(
 {
 
  // var test = vec3<f32>(0.0,0.0,0.0);
-  var result = TraverseVoxelReturn(false,vec3<f32>(0.0,0.0,0.0),0.0);
+  var result = TraverseVoxelReturn(false,vec3<f32>(0.0,0.0,0.0),0.0,0);
   var rd = normalize(rd_in);
   
   var tDelta = abs(1.0 /rd);
@@ -90,11 +112,13 @@ fn traverse_voxel(
         }
 
         var res = textureLoad(texture, vec3<i32>(pos),0).w;
+        var mat = textureLoad(texture, vec3<i32>(pos),0).r;
         if (res > 0.75)
         {
           result.hit = true;
           let slabReturn = slab(pos,pos+1.0,ro,1.0/rd);
           result.outMinT = slabReturn.tMin;
+          result.matIndex = i32(mat);
           return result;
         }
   }
@@ -195,9 +219,15 @@ let lightD = vec3<f32>(0.3,0.1,-0.2);
 var diffuse = max(dot(norm,lightD),0.0);
 var diffuseu = diffuse * vec3<f32>(1.0,1.0,1.0);
 
+
+let material = materialBuffer.materials[traverseVoxelReturn.matIndex];
+
+  // Use material properties
+let color = material.color;
+
 if(traverseVoxelReturn.hit)
 {
-  return vec4<f32>(diffuseu,1.0);
+  return vec4<f32>(diffuseu,1.0)*color;
 }else{
   discard;
 }

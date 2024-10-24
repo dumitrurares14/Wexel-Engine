@@ -75,7 +75,14 @@ const bindGroupLayout = device.createBindGroupLayout({
         binding: 2, // Volume texture sampler
         visibility: GPUShaderStage.FRAGMENT,
         sampler: {},
-    }
+    },
+    {
+        binding: 3,
+        visibility: GPUShaderStage.FRAGMENT,
+        buffer: {
+                      type: 'read-only-storage',
+                    },
+    },
     ]
 });
 const renderPipeline = CreateRenderPipeline(device, bindGroupLayout, shaderCode)
@@ -136,7 +143,11 @@ for (let z = 0; z < depth; z++) {
         // } 
         var value = noise.simplex3(x / 100, y / 100, z/100) * 256.0;
 
-        textureData[index] = value;       // Red channel
+
+        if(y>35)
+        textureData[index] = 255*0;       // Red channel
+    else
+    textureData[index] = 255*1; 
         textureData[index + 1] = value;  // Green channel
         textureData[index + 2] = value;   // Blue channel
         textureData[index + 3] = value;     
@@ -160,15 +171,66 @@ const uniformBuffer = device.createBuffer({
     usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
 });
 
+const materials = [
+    {
+      color: [1.0, 0.0, 0.0, 1.0],
+      metallic: 0.5,
+      roughness: 0.2,
+    },
+    {
+      color: [0.0, 1.0, 0.0, 1.0], 
+      metallic: 0.3,
+      roughness: 0.7,
+    }
+   
+  ];
+
+  const materialSize = 16 + 4 + 4 + 8; 
+
+  const arrayBuffer = new ArrayBuffer(materials.length * materialSize);
+  const dataView = new DataView(arrayBuffer);
+
+  function writeMaterialToBuffer(material, offset) {
+    let byteOffset = offset;
+
+    material.color.forEach((value) => {
+      dataView.setFloat32(byteOffset, value, true);
+      byteOffset += 4;
+    });
+  
+    dataView.setFloat32(byteOffset, material.metallic, true);
+    byteOffset += 4;
+
+    dataView.setFloat32(byteOffset, material.roughness, true);
+    byteOffset += 4;
+
+    byteOffset += 8; // Skip 8 bytes for padding
+  }
+  
+
+  materials.forEach((material, index) => {
+    writeMaterialToBuffer(material, index * materialSize);
+  });
+
+  const materialBuffer = device.createBuffer({
+    size: arrayBuffer.byteLength,
+    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+  });
+  
+
+  device.queue.writeBuffer(materialBuffer, 0, arrayBuffer);
+
 
 const bindGroup = device.createBindGroup({
     label: "Cell renderer bind group",
     layout: renderPipeline.getBindGroupLayout(0),
     entries: [{ binding: 0, resource: { buffer: uniformBuffer } },
     { binding: 1, resource: textureView },
-    { binding: 2, resource: volumeSampler }
+    { binding: 2, resource: volumeSampler },
+    { binding: 3, resource: { buffer: materialBuffer } }
     ],
 });
+
 
 
 let aspect = canvas.width / canvas.height;
