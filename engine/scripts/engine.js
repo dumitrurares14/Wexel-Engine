@@ -7,7 +7,7 @@ var startX = 0.0;
 var startY = 0.0;
 // Global variables for keyboard input
 let keysPressed = {};
-const playerSpeed = 5.1;
+const playerSpeed = 1.1;
 let mouseDelta = [0.0,0.0];
 
 // Function to initialize the canvas and add event listeners

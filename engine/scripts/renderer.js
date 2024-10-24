@@ -234,15 +234,15 @@ const bindGroup = device.createBindGroup({
 
 
 let aspect = canvas.width / canvas.height;
-let projectionMatrix = mat4.perspective(Math.PI/2.0, aspect, 0.01, 100.0);
+let projectionMatrix = mat4.perspective(Math.PI/2.0, aspect, 0.01, 1000.0);
 var viewMatrix = mat4.identity();
 var modelMatrix = mat4.identity();
 
-modelMatrix= mat4.scale(modelMatrix,vec3.fromValues(4, 4, 4));
+//modelMatrix= mat4.scale(modelMatrix,vec3.fromValues(10, 10, 10));
 
 var inverseViewMatrix = mat4.identity();
 
-var cameraPosition = vec3.fromValues(0, 0, -10);
+var cameraPosition = vec3.fromValues(0, 0, -1);
 
 var startTime = 0.0;
 var endTime = 0.0;
@@ -385,7 +385,7 @@ function draw(timeStamp) {
         colorAttachments: [{
             view: context.getCurrentTexture().createView(),
             loadOp: "clear",
-            clearValue: { r: 0, g: 0, b: 0.4, a: 1 },
+            clearValue: { r: 0.737, g: 0.867, b: 0.871, a: 1 },
             storeOp: "store",
         }],
         depthStencilAttachment: {
