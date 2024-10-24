@@ -144,7 +144,7 @@ for (let z = 0; z < depth; z++) {
         var value = noise.simplex3(x / 100, y / 100, z/100) * 256.0;
 
 
-        if(y>35)
+        if(y>100)
         textureData[index] = 255*0;       // Red channel
     else
     textureData[index] = 255*1; 
