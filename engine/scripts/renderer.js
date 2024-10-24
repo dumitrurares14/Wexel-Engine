@@ -80,8 +80,8 @@ const bindGroupLayout = device.createBindGroupLayout({
         binding: 3,
         visibility: GPUShaderStage.FRAGMENT,
         buffer: {
-                      type: 'read-only-storage',
-                    },
+            type: 'read-only-storage',
+        },
     },
     ]
 });
@@ -122,35 +122,16 @@ for (let z = 0; z < depth; z++) {
     for (let y = 0; y < height; y++) {
         for (let x = 0; x < width; x++) {
             const index = (z * width * height + y * width + x) * bytesPerPixel;
-
-        //    const value = (noise2D(x, y) + 1) * 128;
-        //    textureData[index] = value;       // Red channel
-        //    textureData[index + 1] = value;  // Green channel
-        //    textureData[index + 2] = value;   // Blue channel
-        //    textureData[index + 3] = value;                 // Alpha channel
-        // if ((y==0 || z==depth-1 || x == width-1 ||z==0 ||x==0)&& y<50 ) {
-        //     textureData[index] = 255;       // Red channel
-        //     textureData[index + 1] = 255;  // Green channel
-        //     textureData[index + 2] = 255;   // Blue channel
-        //     textureData[index + 3] = 255;                 // Alpha channel
-        // }
-        // else 
-        // {
-        //     textureData[index] = 0;       // Red channel
-        //     textureData[index + 1] = 0;  // Green channel
-        //     textureData[index + 2] = 0;   // Blue channel
-        //     textureData[index + 3] = 0;       
-        // } 
-        var value = noise.simplex3(x / 100, y / 100, z/100) * 256.0;
+            var value = noise.simplex3(x / 100, y / 100, z / 100) * 256.0;
 
 
-        if(y>100)
-        textureData[index] = 255*0;       // Red channel
-    else
-    textureData[index] = 255*1; 
-        textureData[index + 1] = value;  // Green channel
-        textureData[index + 2] = value;   // Blue channel
-        textureData[index + 3] = value;     
+            if (y > 100)
+                textureData[index] = 255 * 0;       // Red channel
+            else
+                textureData[index] = 255 * 1;
+            textureData[index + 1] = value;  // Green channel
+            textureData[index + 2] = value;   // Blue channel
+            textureData[index + 3] = value;
 
         }
     }
@@ -167,37 +148,37 @@ const textureView = volumeTexture.createView({
 });
 
 const uniformBuffer = device.createBuffer({
-    size: 16 * 16, 
+    size: 16 * 16,
     usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
 });
 
 const materials = [
     {
-      color: [1.0, 0.0, 0.0, 1.0],
-      metallic: 0.5,
-      roughness: 0.2,
+        color: [1.0, 0.0, 0.0, 1.0],
+        metallic: 0.5,
+        roughness: 0.2,
     },
     {
-      color: [0.0, 1.0, 0.0, 1.0], 
-      metallic: 0.3,
-      roughness: 0.7,
+        color: [0.0, 1.0, 0.0, 1.0],
+        metallic: 0.3,
+        roughness: 0.7,
     }
-   
-  ];
 
-  const materialSize = 16 + 4 + 4 + 8; 
+];
 
-  const arrayBuffer = new ArrayBuffer(materials.length * materialSize);
-  const dataView = new DataView(arrayBuffer);
+const materialSize = 16 + 4 + 4 + 8;
 
-  function writeMaterialToBuffer(material, offset) {
+const arrayBuffer = new ArrayBuffer(materials.length * materialSize);
+const dataView = new DataView(arrayBuffer);
+
+function writeMaterialToBuffer(material, offset) {
     let byteOffset = offset;
 
     material.color.forEach((value) => {
-      dataView.setFloat32(byteOffset, value, true);
-      byteOffset += 4;
+        dataView.setFloat32(byteOffset, value, true);
+        byteOffset += 4;
     });
-  
+
     dataView.setFloat32(byteOffset, material.metallic, true);
     byteOffset += 4;
 
@@ -205,20 +186,20 @@ const materials = [
     byteOffset += 4;
 
     byteOffset += 8; // Skip 8 bytes for padding
-  }
-  
+}
 
-  materials.forEach((material, index) => {
+
+materials.forEach((material, index) => {
     writeMaterialToBuffer(material, index * materialSize);
-  });
+});
 
-  const materialBuffer = device.createBuffer({
+const materialBuffer = device.createBuffer({
     size: arrayBuffer.byteLength,
     usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-  });
-  
+});
 
-  device.queue.writeBuffer(materialBuffer, 0, arrayBuffer);
+
+device.queue.writeBuffer(materialBuffer, 0, arrayBuffer);
 
 
 const bindGroup = device.createBindGroup({
@@ -234,7 +215,7 @@ const bindGroup = device.createBindGroup({
 
 
 let aspect = canvas.width / canvas.height;
-let projectionMatrix = mat4.perspective(Math.PI/2.0, aspect, 0.01, 1000.0);
+let projectionMatrix = mat4.perspective(Math.PI / 2.0, aspect, 0.01, 1000.0);
 var viewMatrix = mat4.identity();
 var modelMatrix = mat4.identity();
 
@@ -256,7 +237,7 @@ var pitch = 0, yaw = 0;
 
 function draw(timeStamp) {
 
-    
+
     startTime = performance.now();
     const deltaTime = (startTime - endTime) / 1000;
 
@@ -310,7 +291,7 @@ function draw(timeStamp) {
     engine.UpdateMouseStart();
 
 
-    const transformationMatrix =mat4.multiply( mat4.multiply(projectionMatrix, viewMatrix),modelMatrix);
+    const transformationMatrix = mat4.multiply(mat4.multiply(projectionMatrix, viewMatrix), modelMatrix);
 
     device.queue.writeBuffer(
         uniformBuffer,
@@ -324,7 +305,7 @@ function draw(timeStamp) {
     inverseViewMatrix = mat4.inverse(viewMatrix);
 
 
-   // const ViewMatrix = 
+    // const ViewMatrix = 
     device.queue.writeBuffer(
         uniformBuffer,
         64, // Offset by 64 bytes to leave room for the matrix
@@ -347,7 +328,7 @@ function draw(timeStamp) {
 
 
 
-    const sizeC  = vec3.fromValues(canvas.width,canvas.height,0.0);
+    const sizeC = vec3.fromValues(canvas.width, canvas.height, 0.0);
 
     device.queue.writeBuffer(
         uniformBuffer,
@@ -366,11 +347,11 @@ function draw(timeStamp) {
         cameraPosition.byteLength
     );
 
-    
 
 
 
-    
+
+
     // Upload the data to the texture
     device.queue.writeTexture(
         { texture: volumeTexture }, // Destination texture
