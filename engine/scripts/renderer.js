@@ -7,7 +7,6 @@ import {
     mat4,
 } from 'https://wgpu-matrix.org/dist/3.x/wgpu-matrix.module.js';
 
-
 import * as engine from './engine.js';
 
 engine.initializeCanvas();
@@ -25,8 +24,18 @@ if (!adapter) {
 const device = await adapter.requestDevice();
 const context = canvas.getContext("webgpu");
 const canvasFormat = navigator.gpu.getPreferredCanvasFormat();
-configureCanvas(canvas, context, device, canvasFormat);
+const gui = new dat.GUI();
 
+var debugSettings = 
+{
+    lightDirection: [0.51, -0.41, 0.3],
+}
+gui.remember(debugSettings);
+gui.add(debugSettings.lightDirection, 0, -1.0, 1.0).name('Light X').step(0.01);
+gui.add(debugSettings.lightDirection, 1, -1.0, 1.0).name('Light Y').step(0.01);
+gui.add(debugSettings.lightDirection, 2, -1.0, 1.0).name('Light Z').step(0.01);
+
+configureCanvas(canvas, context, device, canvasFormat);
 
 window.addEventListener('resize', () => {
     configureCanvas(canvas, context, device, canvasFormat);
@@ -147,7 +156,7 @@ const textureView = volumeTexture.createView({
 });
 
 const uniformBuffer = device.createBuffer({
-    size: 16 * 16,
+    size: 256,
     usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
 });
 
@@ -218,7 +227,7 @@ let projectionMatrix = mat4.perspective(Math.PI / 2.0, aspect, 0.01, 1000.0);
 var viewMatrix = mat4.identity();
 var modelMatrix = mat4.identity();
 
-//modelMatrix= mat4.scale(modelMatrix,vec3.fromValues(10, 10, 10));
+//modelMatrix= mat4.scale(modelMatrix,vec3.fromValues(debugSettings.rasterizedBoxSize, debugSettings.rasterizedBoxSize, debugSettings.rasterizedBoxSize));
 
 var inverseViewMatrix = mat4.identity();
 
@@ -345,6 +354,18 @@ function draw(timeStamp) {
         cameraPosition.byteOffset,
         cameraPosition.byteLength
     );
+
+    const lightX = debugSettings.lightDirection[0];
+    const lightY = debugSettings.lightDirection[1];
+    const lightZ = debugSettings.lightDirection[2];
+    const lightDirection = vec3.fromValues(lightX,lightY, lightZ);
+    device.queue.writeBuffer(
+        uniformBuffer,
+        208+16,
+        lightDirection.buffer,
+        lightDirection.byteOffset,
+        lightDirection.byteLength
+    ); 
 
 
 

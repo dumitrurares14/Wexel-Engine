@@ -6,7 +6,9 @@ struct Uniforms {
   screenY : f32,
   dummy: f32,
    dummy2: f32,
-  cameraPos : vec3<f32>
+  cameraPos : vec3<f32>,
+  dummy3: f32,
+  lightDirection : vec3<f32>,
 }
 @binding(0) @group(0) var<uniform> uniforms : Uniforms;
 
@@ -220,7 +222,7 @@ fn fragmentMain(
 
   let impactPoint = ((modelCamPos + 0.5 + modelRayDirection * (newSlabReturn.tMin))) * 128.0 + (norm * 0.0001);
 
-  let lightD = vec3<f32>(0.3,0.1,-0.2);
+  let lightD = -uniforms.lightDirection;
 
 let material = materialBuffer.materials[traverseVoxelReturn.matIndex];
 
