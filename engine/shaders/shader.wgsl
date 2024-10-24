@@ -43,7 +43,8 @@ struct TraverseVoxelReturn
 {
   hit: bool,
   normal: vec3<f32>,
-  outMinT: f32
+  outMinT: f32,
+  voxelLocationInGrid: vec3<f32>
 }
 
 fn traverse_voxel(
@@ -54,7 +55,7 @@ fn traverse_voxel(
 {
 
  // var test = vec3<f32>(0.0,0.0,0.0);
-  var result = TraverseVoxelReturn(false,vec3<f32>(0.0,0.0,0.0),0.0);
+  var result = TraverseVoxelReturn(false,vec3<f32>(0.0,0.0,0.0),0.0,vec3<f32>(0.0,0.0,0.0));
   var rd = normalize(rd_in);
   
   var tDelta = abs(1.0 /rd);
@@ -62,7 +63,7 @@ fn traverse_voxel(
   var steps = vec3<i32>(sign(rd));
   var pos = vec3<f32>(floor(ro));
 
-  for(var i: i32 = 0;i<128*2;i++)
+  for(var i: i32 = 0;i<128;i++)
   {
     if (pos.x < -1 || pos.x > 129 || pos.y < -1 || pos.y > 129 || pos.z < -1 || pos.z > 129)
         {
@@ -95,6 +96,7 @@ fn traverse_voxel(
           result.hit = true;
           let slabReturn = slab(pos,pos+1.0,ro,1.0/rd);
           result.outMinT = slabReturn.tMin;
+          result.voxelLocationInGrid = pos;
           return result;
         }
   }
@@ -183,22 +185,29 @@ if(!intersects)
    
 //* max(mint - (mint / 100.0), 0);
   let rayPosOnMeshSurface = modelCamPos+0.5+ modelRayDirection * max(tMin - 1.0/300.0,0);
+  var distanceToVoxelSurface = 0.0;
 
-var traverseVoxelReturn = traverse_voxel(rayPosOnMeshSurface*128.0, modelRayDirection, 256.0);
+var traverseVoxelReturn = traverse_voxel(rayPosOnMeshSurface*128.0, modelRayDirection, 128.0);
 let norm = normalize(traverseVoxelReturn.normal);
+distanceToVoxelSurface = traverseVoxelReturn.outMinT;
 let worldHitLocation = uniforms.cameraPos + worldRayDirection * (traverseVoxelReturn.outMinT + max(tMin,0.0));
-let impactPoint = ((modelCamPos + 0.5 + modelRayDirection * (traverseVoxelReturn.outMinT + max(tMin, 0)))) * 128 + (norm * 0.0001);
-let impactPointws = uniforms.cameraPos + worldRayDirection * (traverseVoxelReturn.outMinT + max(tMin,0.0));
+//let impactPoint = ((modelCamPos + 0.5 + modelRayDirection * (traverseVoxelReturn.outMinT + max(tMin, 0)))) * 128 + (norm * 0.0001);
+//let impactPointws = uniforms.cameraPos + worldRayDirection * (traverseVoxelReturn.outMinT + max(tMin,0.0));
+
+//let impactPoint = ((uniforms.cameraPos +worldRayDirection* (distanceToVoxelSurface + max(tMin,0.0))));
+
+let newSlabReturn = slab((traverseVoxelReturn.voxelLocationInGrid/128.0) - 0.5,((traverseVoxelReturn.voxelLocationInGrid / 128.0) - 0.5) + 1 / 128.0, modelCamPos,
+         1 / modelRayDirection);
+
+let impactPoint = ((modelCamPos + 0.5 + modelRayDirection * (newSlabReturn.tMin))) * 128.0 + (norm * 0.0001);
 
 let lightD = vec3<f32>(0.3,0.1,-0.2);
 
 var diffuse = max(dot(norm,lightD),0.0);
 var diffuseu = diffuse * vec3<f32>(1.0,1.0,1.0);
 
-if(traverseVoxelReturn.hit)
+if(!traverseVoxelReturn.hit)
 {
-  return vec4<f32>(diffuseu,1.0);
-}else{
   discard;
 }
   //let color = textureSample(texture, sampler0, vec3( fragUV.x, fragUV.y, 0.3));
@@ -210,9 +219,16 @@ if(traverseVoxelReturn.hit)
   //let vec4Test = vec4<f32>(tMin,tMin,tMin, 1.0);
 
 
+  let traverseShadow = traverse_voxel((impactPoint)  , lightD, 128.0);
+  var shadow = 1.0;
+  if(traverseShadow.hit)
+  {
+    shadow = 0.0;
+  }
 
+  let vec4Test = vec4<f32>(diffuseu * shadow  ,1.0);
+  return vec4<f32>(vec4Test);
 
-    return vec4<f32>(1.0);
 
   //return vec4Test;
 }
