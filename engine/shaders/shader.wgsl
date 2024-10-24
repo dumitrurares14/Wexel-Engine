@@ -63,9 +63,9 @@ fn traverse_voxel(
   var steps = vec3<i32>(sign(rd));
   var pos = vec3<f32>(floor(ro));
 
-  for(var i: i32 = 0;i<128;i++)
+  for(var i: i32 = 0;i<i32(maximumDistance);i++)
   {
-    if (pos.x < -1 || pos.x > 129 || pos.y < -1 || pos.y > 129 || pos.z < -1 || pos.z > 129)
+    if (pos.x < -1 || pos.x > maximumDistance+1 || pos.y < -1 || pos.y > maximumDistance+1 || pos.z < -1 || pos.z > maximumDistance+1)
         {
           result.hit = false;
           return result;
@@ -182,7 +182,7 @@ fn fragmentMain(
   let rayPosOnMeshSurface = modelCamPos+0.5+ modelRayDirection * max(tMin - 1.0/300.0,0);
   var distanceToVoxelSurface = 0.0;
 
-  var traverseVoxelReturn = traverse_voxel(rayPosOnMeshSurface*128.0, modelRayDirection, 128.0);
+  var traverseVoxelReturn = traverse_voxel(rayPosOnMeshSurface*128.0, modelRayDirection, 256.0);
   let norm = normalize(traverseVoxelReturn.normal);
   distanceToVoxelSurface = traverseVoxelReturn.outMinT;
   let worldHitLocation = uniforms.cameraPos + worldRayDirection * (traverseVoxelReturn.outMinT + max(tMin,0.0));
@@ -203,11 +203,11 @@ fn fragmentMain(
   }
 
 
-  let traverseShadow = traverse_voxel((impactPoint)  , lightD, 128.0);
+  let traverseShadow = traverse_voxel(impactPoint  , lightD, 256.0);
   var shadow = 1.0;
   if(traverseShadow.hit)
   {
-    shadow = 0.0;
+    shadow = 0.3;
   }
 
   let vec4Test = vec4<f32>(diffuseu * shadow  ,1.0);
