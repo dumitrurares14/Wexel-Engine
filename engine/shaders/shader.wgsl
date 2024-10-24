@@ -243,8 +243,17 @@ let color = material.color;
   {
     shadow = 0.3;
   }
+  let result = vec4<f32>(diffuseu * shadow  ,1.0)*color;
 
-  let vec4Test = vec4<f32>(diffuseu * shadow  ,1.0)*color;
-  return vec4<f32>(vec4Test);
+
+  let fogDensity = 0.01;
+let fogColor = vec3<f32>(0.737, 0.867, 0.871);
+
+let fogFactor = exp(-pow(distanceToVoxelSurface * 1.1 * fogDensity, 2.0));
+// Mix fog color based on depth
+let  finalColor = mix(result.xyz, fogColor, 1.0 - fogFactor);
+
+
+  return vec4<f32>(finalColor,1.0);
 
 }

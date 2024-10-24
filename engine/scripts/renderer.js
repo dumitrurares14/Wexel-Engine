@@ -122,13 +122,12 @@ for (let z = 0; z < depth; z++) {
     for (let y = 0; y < height; y++) {
         for (let x = 0; x < width; x++) {
             const index = (z * width * height + y * width + x) * bytesPerPixel;
-            var value = noise.simplex3(x / 100, y / 100, z / 100) * 256.0;
+            var value = noise.simplex3(x / 100, y / 100, z / 100)*256.0 ;
 
+           
+        
+                textureData[index] = 255 * Math.round((Math.random()*50* Math.random())/50);       // Red channel
 
-            if (y > 100)
-                textureData[index] = 255 * 0;       // Red channel
-            else
-                textureData[index] = 255 * 1;
             textureData[index + 1] = value;  // Green channel
             textureData[index + 2] = value;   // Blue channel
             textureData[index + 3] = value;
@@ -154,12 +153,12 @@ const uniformBuffer = device.createBuffer({
 
 const materials = [
     {
-        color: [1.0, 0.0, 0.0, 1.0],
+        color: [0.596, 0.608, 0.639, 1.0],
         metallic: 0.5,
         roughness: 0.2,
     },
     {
-        color: [0.0, 1.0, 0.0, 1.0],
+        color: [0.541, 0.549, 0.561, 1.0],
         metallic: 0.3,
         roughness: 0.7,
     }
