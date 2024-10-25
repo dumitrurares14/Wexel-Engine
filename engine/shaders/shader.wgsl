@@ -201,11 +201,9 @@ fn fragmentMain(
 {
 
   var pixelRayDirection = rayDirection(90.0, vec2<f32>(uniforms.screenX, uniforms.screenY), fragCoord.xy);
-  let worldRayDirection2 = normalize(uniforms.viewMatrix * vec4<f32>(pixelRayDirection, 0.0)).xyz;
   
   pixelRayDirection.y = -pixelRayDirection.y;
-  //pixelRayDirection.y = pixelRayDirection.y * -1.0 + uniforms.screenY;
-
+  
   let worldRayDirection = normalize(uniforms.viewMatrix * vec4<f32>(pixelRayDirection, 0.0)).xyz;
   let modelRayDirection = (uniforms.modelMatrix * vec4<f32>(worldRayDirection, 0.0)).xyz;
   let modelCamPos = (uniforms.modelMatrix * vec4<f32>(uniforms.cameraPos, 1.0)).xyz;
@@ -235,16 +233,12 @@ fn fragmentMain(
 
   let impactPoint = ((modelCamPos + 0.5 + modelRayDirection * (newSlabReturn.tMin))) * 128.0 + (norm * 0.0001);
 
-  let lightD = -uniforms.lightDirection;
+  let lightD = normalize(-uniforms.lightDirection);
 
 let material = materialBuffer.materials[traverseVoxelReturn.matIndex];
 
-  // Use material properties
+  
 let color = material.color;
-
-
-  var diffuse = max(dot(norm,lightD),0.0);
-  var diffuseu = diffuse * vec3<f32>(1.0,1.0,1.0);
 
   if(!traverseVoxelReturn.hit)
   {
@@ -253,7 +247,7 @@ let color = material.color;
 
 
   var shadow = 0.0;
-  var numSamples = 4;
+  var numSamples = 1;
   for(var i: i32 = 1;i<=numSamples;i++)
   {
     var rand = 124.5 * worldHitLocation.xy;
@@ -268,27 +262,26 @@ let color = material.color;
     {
       shadow += 1.0;
     }
-
+ 
   }
   shadow = shadow / f32(numSamples);
 
 
-  var brdfDirection = normalize(impactPoint- (modelCamPos+0.5));
+  var brdfDirection = normalize(impactPoint- (uniforms.cameraPos));
   
-  //let result =  cook_torrance_brdf(norm ,brdfDirection,-lightD,color.xyz,material.metallic,material.roughness)*5;
-let result = diffuseu*  (1.7- shadow)*  color.xyz;
-  //
-  //vec4<f32>(diffuseu *  (1.0 - shadow)  ,1.0)  *  color;
 
+  let result =  cook_Torrance_BRDF(norm ,-worldRayDirection,lightD,color.xyz,material.metallic,material.roughness)*5*  (1.7- shadow);
 
+ 
+ 
   let fogDensity = 0.01;
   let fogColor = vec3<f32>(0.737, 0.867, 0.871);
 
   let fogFactor = exp(-pow(distanceToVoxelSurface * 1.1 * fogDensity, 2.0));
-// Mix fog color based on depth
+
   let  finalColor = mix(result.xyz, fogColor, 1.0 - fogFactor);
 
 
-  return vec4<f32>(result,1.0);
+  return vec4<f32>(finalColor,1.0);
 
 }

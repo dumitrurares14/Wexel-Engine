@@ -135,11 +135,19 @@ for (let z = 0; z < depth; z++) {
 
            
         
-                textureData[index] = 255 * Math.round((Math.random()*1));       // Red channel
+                textureData[index] = 255 * Math.round((Math.random()*5));     
 
-            textureData[index + 1] = value;  // Green channel
-            textureData[index + 2] = value;   // Blue channel
+            textureData[index + 1] = value; 
+            textureData[index + 2] = value;  
             textureData[index + 3] = value;
+
+
+            // textureData[index] = 255 * Math.round((Math.random()*1));       // Red channel
+
+            // textureData[index + 1] = 255;  // Green channel
+            // textureData[index + 2] = 255;   // Blue channel
+            // textureData[index + 3] = 255;
+
 
         }
     }
@@ -163,13 +171,13 @@ const uniformBuffer = device.createBuffer({
 const materials = [
     {
         color: [0.596, 0.608, 0.639, 1.0],
-        metallic: 1.0,
-        roughness: 1.0,
+        metallic: 0.2,
+        roughness: 0.8,
     },
     {
         color: [0.741, 0.549, 0.461, 1.0],
-        metallic: 0.3,
-        roughness: 0.7,
+        metallic: 0.4,
+        roughness: 0.6,
     }
 
 ];
