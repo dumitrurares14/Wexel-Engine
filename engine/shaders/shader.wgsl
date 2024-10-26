@@ -201,7 +201,6 @@ fn fragmentMain(
 {
 
   var pixelRayDirection = rayDirection(90.0, vec2<f32>(uniforms.screenX, uniforms.screenY), fragCoord.xy);
-  
   pixelRayDirection.y = -pixelRayDirection.y;
   
   let worldRayDirection = normalize(uniforms.viewMatrix * vec4<f32>(pixelRayDirection, 0.0)).xyz;
@@ -212,20 +211,18 @@ fn fragmentMain(
   let testCamPos = modelCamPos+0.5;
   let slabReturn = slab(vec3<f32>(0.0),vec3<f32>(1.0), testCamPos,invModelRayDirection);
 
-  var tMin = slabReturn.tMin;
-  var tMax = slabReturn.tMax;
-  var intersects = slabReturn.intersects;
-  if(!intersects)
+  let tMin = slabReturn.tMin;
+  let tMax = slabReturn.tMax;
+  if(!slabReturn.intersects)
   {
     discard;
   }
 
   let rayPosOnMeshSurface = modelCamPos+0.5+ modelRayDirection * max(tMin - 1.0/300.0,0);
-  var distanceToVoxelSurface = 0.0;
-
-  var traverseVoxelReturn = traverse_voxel(rayPosOnMeshSurface*128.0, modelRayDirection, 256.0);
+  
+  let traverseVoxelReturn = traverse_voxel(rayPosOnMeshSurface*128.0, modelRayDirection, 256.0);
   let norm = normalize(traverseVoxelReturn.normal);
-  distanceToVoxelSurface = traverseVoxelReturn.outMinT;
+  let distanceToVoxelSurface = traverseVoxelReturn.outMinT;
   let worldHitLocation = uniforms.cameraPos + worldRayDirection * (traverseVoxelReturn.outMinT + max(tMin,0.0));
 
   let newSlabReturn = slab((traverseVoxelReturn.voxelLocationInGrid/128.0) - 0.5,((traverseVoxelReturn.voxelLocationInGrid / 128.0) - 0.5) + 1.0 / 128.0, modelCamPos,
@@ -235,19 +232,19 @@ fn fragmentMain(
 
   let lightD = normalize(-uniforms.lightDirection);
 
-let material = materialBuffer.materials[traverseVoxelReturn.matIndex];
+  let material = materialBuffer.materials[traverseVoxelReturn.matIndex];
 
-  
-let color = material.color;
+    
+  let color = material.color;
 
-  if(!traverseVoxelReturn.hit)
-  {
-    discard;
-  }
+    if(!traverseVoxelReturn.hit)
+    {
+      discard;
+    }
 
 
   var shadow = 0.0;
-  var numSamples = 4;
+  let numSamples = 4;
   for(var i: i32 = 1;i<=numSamples;i++)
   {
     var rand = 124.5 * worldHitLocation.xy;
@@ -265,9 +262,6 @@ let color = material.color;
  
   }
   shadow = shadow / f32(numSamples);
-
-
-  var brdfDirection = normalize(impactPoint- (uniforms.cameraPos));
   
 
   let ambient = vec3<f32>(0.21,0.2,0.2);
