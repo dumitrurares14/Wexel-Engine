@@ -125,9 +125,9 @@ fn traverse_voxel(
             result.normal = vec3<f32>(0.0, 0.0, f32(-steps.z));
         }
 
-        var res = textureLoad(texture, vec3<i32>(pos),0).w;
-        var mat = textureLoad(texture, vec3<i32>(pos),0).r;
-        if (res > 0.75)
+        var res = textureLoad(texture, vec3<i32>(pos),0);
+        var mat = res.r;
+        if (res.w > 0.75)
         {
           result.hit = true;
           let slabReturn = slab(pos,pos+1.0,ro,1.0/rd);
@@ -247,7 +247,7 @@ let color = material.color;
 
 
   var shadow = 0.0;
-  var numSamples = 1;
+  var numSamples = 4;
   for(var i: i32 = 1;i<=numSamples;i++)
   {
     var rand = 124.5 * worldHitLocation.xy;
@@ -257,7 +257,7 @@ let color = material.color;
     newDirection.z = norm.z + (sin(hash12(rand*3*f32(i))*2-1));
 
     newDirection = normalize(newDirection);
-    let traverseShadow = traverse_voxel(impactPoint  , lightD +newDirection*0.05 , 256.0);
+    let traverseShadow = traverse_voxel(impactPoint  , lightD +newDirection*0.05 , 128.0);
     if(traverseShadow.hit)
     {
       shadow += 1.0;
@@ -270,7 +270,8 @@ let color = material.color;
   var brdfDirection = normalize(impactPoint- (uniforms.cameraPos));
   
 
-  let result =  cook_Torrance_BRDF(norm ,-worldRayDirection,lightD,color.xyz,material.metallic,material.roughness)*5*  (1.7- shadow);
+  let ambient = vec3<f32>(0.21,0.2,0.2);
+  let result =  cook_Torrance_BRDF(norm ,-worldRayDirection,lightD,color.xyz,material.metallic,material.roughness)*5*  (1.0- shadow);
 
  
  
@@ -279,7 +280,7 @@ let color = material.color;
 
   let fogFactor = exp(-pow(distanceToVoxelSurface * 1.1 * fogDensity, 2.0));
 
-  let  finalColor = mix(result.xyz, fogColor, 1.0 - fogFactor);
+  let  finalColor = mix(result.xyz + ambient, fogColor, 1.0 - fogFactor);
 
 
   return vec4<f32>(finalColor,1.0);
