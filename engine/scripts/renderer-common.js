@@ -22,47 +22,62 @@ export function configureCanvas(canvas, context, device, canvasFormat) {
 }
 
 
-export function CreateRenderPipeline(device,bindGroupLayout,shaderCode)
-{
-    const shaderModule = device.createShaderModule({
-        label: 'vertexMain',
-        code: shaderCode
-    });
-    const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+export function CreateRenderPipeline(device, bindGroupLayout, shaderCode) {
+  const shaderModule = device.createShaderModule({
+      label: 'vertexMain',
+      code: shaderCode
+  });
 
-    const pipelineLayout = device.createPipelineLayout({
-      bindGroupLayouts: [
-        bindGroupLayout, // @group(0)
-      ]
-    });
-    const pipeline = device.createRenderPipeline({
-        layout: pipelineLayout,
-        label: "Render pipeline",
-        vertex: {
-            module: shaderModule,
-            entryPoint: "vertexMain",
-            buffers: [vertexBufferLayout]
-        },
-        fragment: {
-            module: shaderModule,
-            entryPoint: "fragmentMain",
-            targets: [{ format: presentationFormat }],
-            format: presentationFormat
-        },
-        primitive:
-        {
-            topology: "triangle-list",
-            cullMode: "none"
-        },
-        depthStencil: {
-            depthWriteEnabled: true,
-            depthCompare: 'less',
-            format: 'depth24plus',
-          },
-    });
+  const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
 
-    return pipeline;
+  const pipelineLayout = device.createPipelineLayout({
+      bindGroupLayouts: [bindGroupLayout],
+  });
+
+  const pipeline = device.createRenderPipeline({
+      layout: pipelineLayout,
+      label: "Render pipeline",
+      vertex: {
+          module: shaderModule,
+          entryPoint: "vertexMain",
+          buffers: [vertexBufferLayout],
+      },
+      fragment: {
+          module: shaderModule,
+          entryPoint: "fragmentMain",
+          targets: [
+              {
+                  format: presentationFormat,
+                  blend: {
+                      color: {
+                          srcFactor: "src-alpha",
+                          dstFactor: "one-minus-src-alpha",
+                          operation: "add",
+                      },
+                      alpha: {
+                          srcFactor: "one",
+                          dstFactor: "one-minus-src-alpha",
+                          operation: "add",
+                      },
+                  },
+                  writeMask: GPUColorWrite.ALL,
+              },
+          ],
+      },
+      primitive: {
+          topology: "triangle-list",
+          cullMode: "front",
+      },
+      depthStencil: {
+          depthWriteEnabled: true,
+          depthCompare: "less",
+          format: "depth24plus",
+      },
+  });
+
+  return pipeline;
 }
+
 
 
 //volume and render data

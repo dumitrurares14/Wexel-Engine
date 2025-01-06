@@ -8,7 +8,10 @@ import {
 } from 'https://wgpu-matrix.org/dist/3.x/wgpu-matrix.module.js';
 
 import * as engine from './engine.js';
-
+// Helper clamp function
+function clamp(value, minVal, maxVal) {
+    return Math.max(minVal, Math.min(value, maxVal));
+  }
 engine.initializeCanvas();
 
 const canvas = engine.canvas;
@@ -127,31 +130,52 @@ noise.seed(Math.random());
 
 //const noise2D = makeNoise2D(Date.now()); // Using current date as seed
 // Fill the data with a gradient
-for (let z = 0; z < depth; z++) {
+const centerX = width * 0.5;
+  const centerY = height * 0.5;
+  const centerZ = depth * 0.5;
+
+  // Define a maximum radius for the spherical falloff
+  const maxRadius = Math.sqrt(centerX * centerX + centerY * centerY + centerZ * centerZ);
+
+  for (let z = 0; z < depth; z++) {
     for (let y = 0; y < height; y++) {
-        for (let x = 0; x < width; x++) {
-            const index = (z * width * height + y * width + x) * bytesPerPixel;
-            var value = noise.simplex3(x / 100, y / 100, z / 100)*256.0 ;
+      for (let x = 0; x < width; x++) {
+        // Calculate the linear index
+        const index = (z * width * height + y * width + x) * bytesPerPixel;
 
-           
+        // Compute distance from the center
+        let dx = x - centerX;
+        let dy = y - centerY;
+        let dz = z - centerZ;
+        let distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
         
-                textureData[index] = 255 * Math.round((Math.random()*5));     
+        // Spherical falloff: 1 at center, 0 at maxRadius
+        //let densityScale = 0.1;  // >1 increases density, <1 decreases
 
-            textureData[index + 1] = value; 
-            textureData[index + 2] = value;  
-            textureData[index + 3] = value;
+        let falloff = 1.0 - (distance / maxRadius);
+        falloff = clamp(falloff, 0.0, 1.0) ;
 
+        // Sample simplex noise, scale it, and clamp to [0..1]
+        let noiseValue = noise.simplex3(x / 100, y / 100, z / 100);
+        // Shift noise [-1..1] to [0..1]
+        noiseValue = (noiseValue * 0.5) + 0.5;
 
-            // textureData[index] = 255 * Math.round((Math.random()*1));       // Red channel
+        // Combine noise with falloff for final density
+        let adjustedFalloff = Math.pow(falloff, 4.0);
+        let density = noiseValue * adjustedFalloff;
 
-            // textureData[index + 1] = 255;  // Green channel
-            // textureData[index + 2] = 255;   // Blue channel
-            // textureData[index + 3] = 255;
+        
+        // Convert to [0..255]
+        let colorValue = density * 255.0;
 
-
-        }
+        // Write RGBA (you can customize channels as you like)
+        textureData[index + 0] = colorValue; // R
+        textureData[index + 1] = colorValue; // G
+        textureData[index + 2] = colorValue; // B
+        textureData[index + 3] = colorValue; // A
+      }
     }
-}
+  }
 
 // Define the texture write layout
 const textureWriteLayout = {

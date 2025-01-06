@@ -146,6 +146,59 @@ fn traverse_voxel(
   return result;
 }
 
+
+fn RayMarchCloud(
+    rayOrigin: vec3<f32>,
+    rayDirection: vec3<f32>,
+    stepCount: u32,
+    stepSize: f32,
+    lightDirection: vec3<f32>
+) -> vec4<f32> {
+    // Accumulated color and alpha
+    var accumColor = vec3<f32>(0.0, 0.0, 0.0);
+    var accumAlpha = 0.0;
+
+    // Current ray position
+    var currentPos = rayOrigin;
+
+    // Ensure the direction is normalized
+    let dir = normalize(rayDirection);
+    let lightDir = normalize(lightDirection);
+
+     for (var i = 0u; i < stepCount; i = i + 1u) {
+      // Sample the texture
+       var density = textureLoad(texture, vec3<i32>(currentPos),0).w;
+       if density > 0.8 {
+        density = 0.0;
+       }
+      // Basic alpha accumulation (compositing)
+        let alpha = density * stepSize;
+         // ===== Directional Lighting Approximation =====
+        // We use a simple forward-scattering phase function
+        // that depends on the dot between the view ray and the light direction.
+
+        let dotPrd = max(dot(dir, lightDir),0.0);
+        let phaseTerm = 0.5 + 0.5 * pow(dotPrd, 8.0);
+
+        // White base color modulated by the phase term
+        var color = vec3<f32>(1.0, 1.0, 1.0) * phaseTerm;
+
+        // Blend color and alpha (premultiplied alpha)
+        accumColor = accumColor + (1.0 - accumAlpha) * color * alpha;
+        accumAlpha = accumAlpha + (1.0 - accumAlpha) * alpha;
+
+        // Move the sample along the ray
+        currentPos = currentPos + dir * stepSize;
+
+        // Early-out if fully opaque
+        if (accumAlpha >= 0.99) {
+            break;
+        }
+     }
+
+    return vec4<f32>(accumColor.xyz, accumAlpha);
+}
+
 // Define the slab function
 fn slab(
     p0: vec3<f32>,
@@ -213,70 +266,17 @@ fn fragmentMain(
 
   let tMin = slabReturn.tMin;
   let tMax = slabReturn.tMax;
-  if(!slabReturn.intersects)
-  {
-    discard;
-  }
+  // if(!slabReturn.intersects)
+  // {
+  //   discard;
+  // }
+let lightD = normalize(-uniforms.lightDirection);
+let rayPosOnMeshSurface = modelCamPos+0.5+ modelRayDirection * max(tMin - 1.0/300.0,0);
+let finalColor =  RayMarchCloud(rayPosOnMeshSurface*128.0, modelRayDirection, 128,1.0,lightD);
+return finalColor;
+//return vec4<f32>(1.0,1.0,1.0,0.25);
 
-  let rayPosOnMeshSurface = modelCamPos+0.5+ modelRayDirection * max(tMin - 1.0/300.0,0);
+
   
-  let traverseVoxelReturn = traverse_voxel(rayPosOnMeshSurface*128.0, modelRayDirection, 256.0);
-  let norm = normalize(traverseVoxelReturn.normal);
-  let distanceToVoxelSurface = traverseVoxelReturn.outMinT;
-  let worldHitLocation = uniforms.cameraPos + worldRayDirection * (traverseVoxelReturn.outMinT + max(tMin,0.0));
-
-  let newSlabReturn = slab((traverseVoxelReturn.voxelLocationInGrid/128.0) - 0.5,((traverseVoxelReturn.voxelLocationInGrid / 128.0) - 0.5) + 1.0 / 128.0, modelCamPos,
-          1 / modelRayDirection);
-
-  let impactPoint = ((modelCamPos + 0.5 + modelRayDirection * (newSlabReturn.tMin))) * 128.0 + (norm * 0.0001);
-
-  let lightD = normalize(-uniforms.lightDirection);
-
-  let material = materialBuffer.materials[traverseVoxelReturn.matIndex];
-
-    
-  let color = material.color;
-
-    if(!traverseVoxelReturn.hit)
-    {
-      discard;
-    }
-
-
-  var shadow = 0.0;
-  let numSamples = 4;
-  for(var i: i32 = 1;i<=numSamples;i++)
-  {
-    var rand = 124.5 * worldHitLocation.xy;
-    var newDirection = vec3<f32>(0,0,0);
-    newDirection.x = norm.x + (sin(hash12(rand*1*f32(i))*2-1));
-    newDirection.y = norm.y + (sin(hash12(rand*2*f32(i))*2-1));
-    newDirection.z = norm.z + (sin(hash12(rand*3*f32(i))*2-1));
-
-    newDirection = normalize(newDirection);
-    let traverseShadow = traverse_voxel(impactPoint  , lightD +newDirection*0.05 , 128.0);
-    if(traverseShadow.hit)
-    {
-      shadow += 1.0;
-    }
- 
-  }
-  shadow = shadow / f32(numSamples);
-  
-
-  let ambient = vec3<f32>(0.21,0.2,0.2);
-  let result =  cook_Torrance_BRDF(norm ,-worldRayDirection,lightD,color.xyz,material.metallic,material.roughness)*5*  (1.0- shadow);
-
- 
- 
-  let fogDensity = 0.01;
-  let fogColor = vec3<f32>(0.737, 0.867, 0.871);
-
-  let fogFactor = exp(-pow(distanceToVoxelSurface * 1.1 * fogDensity, 2.0));
-
-  let  finalColor = mix(result.xyz + ambient, fogColor, 1.0 - fogFactor);
-
-
-  return vec4<f32>(finalColor,1.0);
 
 }
