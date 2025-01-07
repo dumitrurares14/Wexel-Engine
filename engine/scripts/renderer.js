@@ -156,7 +156,8 @@ const centerX = width * 0.5;
         falloff = clamp(falloff, 0.0, 1.0) ;
 
         // Sample simplex noise, scale it, and clamp to [0..1]
-        let noiseValue = noise.simplex3(x / 100, y / 100, z / 100);
+        var noiseValue = noise.simplex3(x / 100, y / 100, z / 100);
+        noiseValue +=  noise.simplex3(x / 10, y / 10, z / 10);
         // Shift noise [-1..1] to [0..1]
         noiseValue = (noiseValue * 0.5) + 0.5;
 

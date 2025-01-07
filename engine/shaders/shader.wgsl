@@ -147,6 +147,60 @@ fn traverse_voxel(
 }
 
 
+
+fn noise(x: vec3<f32>) -> f32
+{
+    var p = floor(x);
+    var f = fract(x);
+	  f = f*f*(3.0-2.0*f);
+    var pos = p + f;
+    
+    //var density = textureLoad(texture, vec3<i32>(currentPos),0).w;
+
+    var result =  textureLoad(texture,vec3<i32>((pos+0.5)/32.0),0).w * 2.0-1.0;
+    return result;
+}
+
+fn map(p: vec3<f32>, oct: i32) -> f32 {
+    // Adjust position by time
+    var q = p - vec3<f32>(0.0, 0.1, 1.0) * 124.0; // should be * time
+    
+    // g factor based on noise
+    let g = 0.5 + 0.5 * noise(q * 0.3);
+
+    // Accumulate noise at different scales
+    var f = 0.5 * noise(q);
+    q = q * 2.02;
+
+    if (oct >= 2) {
+        f = f + 0.25 * noise(q);
+    }
+    q = q * 2.23;
+
+    if (oct >= 3) {
+        f = f + 0.125 * noise(q);
+    }
+    q = q * 2.41;
+
+    if (oct >= 4) {
+        f = f + 0.0625 * noise(q);
+    }
+    q = q * 2.62;
+
+    if (oct >= 5) {
+        f = f + 0.03125 * noise(q);
+    }
+
+    // Equivalent of mix( f*0.1 - 0.5, f, g*g )
+    // mix(a, b, t) = a*(1-t) + b*t
+    let t = g * g;
+    let lowVal = f * 0.1 - 0.5;
+    f = lowVal * (1.0 - t) + f * t;
+
+    // Final return
+    return 1.5 * f - 0.5 - p.y;
+}
+
 fn RayMarchCloud(
     rayOrigin: vec3<f32>,
     rayDirection: vec3<f32>,
@@ -182,9 +236,25 @@ fn RayMarchCloud(
 
         // White base color modulated by the phase term
         var color = vec3<f32>(1.0, 1.0, 1.0) * phaseTerm;
+      //float dif = clamp((den - map(pos+0.3*sundir,oct))/0.25, 0.0, 1.0 );
+       //vec3  lin = vec3(0.65,0.65,0.75)*1.1 + 0.8*vec3(1.0,0.6,0.3)*dif;
+           //vec4  col = vec4( mix( vec3(1.0,0.93,0.84), vec3(0.25,0.3,0.4), den ), den );
+      var dif = clamp((density - map(currentPos + 0.3 * lightDir,5))/0.25, 0.0, 1.0);
+      var lin = vec3<f32>(0.65,0.65,0.75)*1.1 + 0.8*vec3<f32>(1.0,0.6,0.3)*dif;
+      var col = vec4<f32>(mix(vec3<f32>(1.0,0.93,0.84), vec3<f32>(0.25,0.3,0.4), density), density);
 
+      color = col.xyz;
+      //hcolor *=lin;
+
+      //float sun = clamp( dot(sundir,rd), 0.0, 1.0 );    
+    //vec3 col = vec3(0.6,0.71,0.75) - rd.y*0.2*vec3(1.0,0.5,1.0) + 0.15*0.5;    
+    //col += 0.2*vec3(1.0,.6,0.1)*pow( sun, 8.0 );    
+    var sun = clamp(dot(lightDir,dir),0.0,1.0);
+    var bgColor = vec3<f32>(0.7,0.71,0.75) - dir.y*0.2*vec3<f32>(1.0,0.5,1.0) + 0.15*0.5;
+    bgColor += 0.6*vec3<f32>(1.0,0.6,0.1)*pow(sun,8.0);
+      color = mix(color,bgColor,1.0-exp2(-0.1*f32(i)));
         // Blend color and alpha (premultiplied alpha)
-        accumColor = accumColor + (1.0 - accumAlpha) * color * alpha;
+        accumColor = accumColor + (1.0 - accumAlpha) * color.xyz * alpha;
         accumAlpha = accumAlpha + (1.0 - accumAlpha) * alpha;
 
         // Move the sample along the ray
@@ -252,7 +322,7 @@ fn fragmentMain(
   @builtin(position) fragCoord: vec4<f32>
 ) -> @location(0) vec4f 
 {
-
+//return vec4<f32>(1.0,1.0,1.0,0.25);
   var pixelRayDirection = rayDirection(90.0, vec2<f32>(uniforms.screenX, uniforms.screenY), fragCoord.xy);
   pixelRayDirection.y = -pixelRayDirection.y;
   
@@ -272,7 +342,8 @@ fn fragmentMain(
   // }
 let lightD = normalize(-uniforms.lightDirection);
 let rayPosOnMeshSurface = modelCamPos+0.5+ modelRayDirection * max(tMin - 1.0/300.0,0);
-let finalColor =  RayMarchCloud(rayPosOnMeshSurface*128.0, modelRayDirection, 128,1.0,lightD);
+var finalColor =  RayMarchCloud(rayPosOnMeshSurface*128.0, modelRayDirection, 128,1.0,lightD);
+finalColor.w *= 0.5;
 return finalColor;
 //return vec4<f32>(1.0,1.0,1.0,0.25);
 
